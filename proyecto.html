@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flow Score - Proyecto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Music&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+.topbar{display:flex;align-items:center;gap:12px;padding:8px 16px;background:#16213e;border-bottom:1px solid #0f3460;flex-shrink:0}
+.topbar a{color:#2ecc71;text-decoration:none;font-size:.9rem}
+.topbar .title{font-size:1rem;font-weight:600;color:#fff;flex:1}
+.topbar button{background:#0f3460;color:#aaa;border:1px solid #1a1a4e;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.8rem}
+.topbar button:hover{border-color:#2ecc71;color:#fff}
+.main{display:flex;flex:1;overflow:hidden}
+.pent-area{flex:1;overflow:auto;position:relative;background:#1c1c1e}
+.panel{width:200px;background:#16213e;border-left:1px solid #0f3460;display:flex;flex-direction:column;flex-shrink:0}
+.panel h3{padding:10px 12px;font-size:.8rem;color:#888;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #0f3460}
+.track-list{flex:1;overflow-y:auto;padding:6px}
+.track-item{padding:10px 12px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:.85rem;border:1px solid transparent;transition:.15s}
+.track-item:hover{background:#1a1a2e;border-color:#0f3460}
+.track-item.active{background:#0f3460;border-color:#2ecc71;color:#fff}
+.add-track{margin:8px;padding:10px;border:2px dashed #333;border-radius:6px;text-align:center;color:#555;cursor:pointer;font-size:1.2rem}
+.add-track:hover{border-color:#2ecc71;color:#2ecc71}
+.info-bar{padding:6px 16px;background:#0f3460;font-size:.75rem;color:#aaa;display:flex;gap:20px;flex-shrink:0;border-top:1px solid #1a1a2e}
+.info-bar span{white-space:nowrap}
+canvas{display:block}
+#modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);justify-content:center;align-items:center;z-index:10}
+#modal.show{display:flex}
+.modal-box{background:#16213e;border:1px solid #0f3460;border-radius:12px;padding:24px;width:90%;max-width:360px}
+.modal-box h2{margin-bottom:16px;color:#2ecc71;font-size:1.2rem}
+.modal-track{padding:12px;border-radius:6px;cursor:pointer;border:1px solid #0f3460;margin:6px 0;transition:.15s}
+.modal-track:hover{border-color:#2ecc71;background:#1a1a2e}
+.view-opts{display:flex;gap:10px}
+.view-opt{flex:1;padding:12px 10px;border-radius:6px;cursor:pointer;border:1px solid #0f3460;background:#1a1a2e;color:#aaa;font-size:.9rem;transition:.15s}
+.view-opt:hover{border-color:#2ecc71;color:#fff}
+.view-opt.active{background:#0f3460;border-color:#2ecc71;color:#fff}
+.modal-close{margin-top:16px;text-align:right}
+.modal-close button{background:#333;color:#aaa;border:none;padding:8px 20px;border-radius:6px;cursor:pointer}
+.help{position:fixed;bottom:50px;left:50%;transform:translateX(-50%);background:#16213e;border:1px solid #0f3460;border-radius:8px;padding:16px 24px;font-size:.8rem;line-height:1.8;color:#aaa;z-index:5;display:none;max-width:500px}
+.help.show{display:block}
+.help b{color:#2ecc71}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+<a href="index.html">&larr; Volver</a>
+<span class="title" id="projTitle">Proyecto</span>
+<button id="btnVista">Cambiar vista</button>
+<button id="btnAyuda">Ayuda (?)</button>
+</div>
+
+<div class="main">
+<div class="pent-area"><canvas id="canvas"></canvas></div>
+<div class="panel">
+<h3>Tracks</h3>
+<div class="track-list" id="trackList"></div>
+<div class="add-track" id="addTrack">+</div>
+</div>
+</div>
+
+<div class="info-bar">
+<span id="infoKey">Clave: Sol</span>
+<span id="infoCompas">Compás: 4/4</span>
+<span id="infoTona">Tonalidad: C</span>
+<span id="infoCursor">Pos: 1/1</span>
+<span id="infoNote">Nota: --</span>
+<span id="infoOctave">Octava: 4</span>
+<span id="infoBeam">Plicas: Auto</span>
+</div>
+
+<div id="modal">
+<div class="modal-box">
+<h2>Cambiar vista</h2>
+<div class="view-opts">
+<button class="view-opt" data-view="scroll">Scroll</button>
+<button class="view-opt" data-view="pagina">Página</button>
+</div>
+<hr style="border-color:#0f3460;margin:14px 0">
+<h2>Tracks</h2>
+<div id="modalTracks"></div>
+<div class="modal-close"><button id="modalClose">Cerrar</button></div>
+</div>
+</div>
+
+<div class="help" id="helpBox">
+<b>Navegación (cursor):</b><br>
+O / ↑ - Arriba | L / ↓ - Abajo | K / ← - Izquierda | Ñ / → - Derecha<br><br>
+<b>Scroll de vista:</b><br>
+P - Scroll derecha | I - Scroll izquierda<br><br>
+<b>Notas:</b><br>
+1 - Semifusa | 2 - Fusa | 3 - Semicorchea<br>
+4 - Corchea | 5 - Negra | 6 - Blanca | 7 - Redonda<br>
+R - Silencio (sobre una nota la convierte a silencio; o escribe el número y luego R, p.ej. 5 + R = silencio de negra)<br><br>
+<b>Otras:</b><br>
++ / -  - Alteración sostenido/bemol | Backspace/Supr - Borrar nota
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const projIdx = parseInt(params.get('id')||'0');
+
+function getProjects(){return JSON.parse(localStorage.getItem('ps_projects')||'[]')}
+function saveProjects(p){localStorage.setItem('ps_projects',JSON.stringify(p))}
+function load(){return getProjects()[projIdx]}
+
+const KEY_SIG={
+  C:[],G:['F#'],D:['F#','C#'],A:['F#','C#','G#'],E:['F#','C#','G#','D#'],B:['F#','C#','G#','D#','A#'],
+  F:['Bb'],Bb:['Bb','Eb'],Eb:['Bb','Eb','Ab'],Ab:['Bb','Eb','Ab','Db'],Db:['Bb','Eb','Ab','Db','Gb'],Gb:['Bb','Eb','Ab','Db','Gb','Cb']
+};
+
+const NOTE_NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const ENHARMONIC={'C#':'Db','D#':'Eb','F#':'Gb','G#':'Ab','A#':'Bb'};
+
+// ---- Manual canvas renderer (no external library) ----
+// Notes are laid out with the same position model the app uses:
+//   position 0 = top staff line, position 8 = bottom staff line,
+//   each +1 = one half line-step (a line-to-space step). Y(pos) = STAVE_TOP + pos*LINE_SP/2.
+const LINE_SP = 14;
+const STAVE_TOP = 90;
+const STAFF_LEFT = 34;
+const NOTE_SPACING = 58;
+const HEAD_W = 15;
+const HEAD_H = 11;
+
+// Valor rítmico de cada duración en tiempos (una negra = 1).
+// 7=redonda, 6=blanca, 5=negra, 4=corchea, 3=semicorchea, 2=fusa, 1=semifusa.
+const DUR_BEATS = {7:4, 6:2, 5:1, 4:0.5, 3:0.25, 2:0.125, 1:0.0625};
+
+// Devuelve la duración del compás en tiempos (negra = 1) a partir de "num/den".
+// Ej.: "4/4"->4, "3/4"->3, "6/8"->3.
+function measureBeats(compas){
+  const parts = String(compas || '4/4').split('/');
+  const num = Math.max(1, parseInt(parts[0]) || 4);
+  const den = Math.max(1, parseInt(parts[1]) || 4);
+  return num * (4 / den);
+}
+
+// Diatonic staff positions (noteY units: 0 = top line, 8 = bottom line; even = lines,
+// odd = spaces, negative = above the staff) of each key-signature accidental, per clef.
+// Sharps order: F#,C#,G#,D#,A#,E#,B#. Flats order: Bb,Eb,Ab,Db,Gb,Cb,Fb.
+// Treble sharps: F#(top line),C#(3rd space),G#(space above staff),D#(4th line),A#(2nd space),E#(top space),B#(3rd line).
+// Treble flats : Bb(middle line),Eb(4th space),Ab(2nd space),Db(4th line),Gb(2nd line),Cb(3rd space),Fb(1st space).
+// Bass sharps  : F#(4th line),C#(2nd space),G#(4th space),D#(3rd line),A#(1st space),E#(3rd space),B#(2nd line).
+// Bass flats   : Bb(2nd line),Eb(3rd space),Ab(1st space),Db(3rd line),Gb(bottom line),Cb(2nd space),Fb(below staff).
+const KEY_SIG_POS = {
+  treble: { sharp: [0, 3, -1, 2, 5, 1, 4], flat: [4, 1, 5, 2, 6, 3, 7] },
+  bass:   { sharp: [2, 5, 1, 4, 7, 3, 6], flat: [6, 3, 7, 4, 8, 5, 9] }
+};
+
+const KEY_SHARPS = {G:1, D:2, A:3, E:4, B:5};
+const KEY_FLATS  = {F:1, Bb:2, Eb:3, Ab:4, Db:5, Gb:6};
+
+const STAFF_LINE_YS = [0,1,2,3,4].map(i => STAVE_TOP + i*LINE_SP);
+
+let project = load();
+if(!project){window.location.href='index.html';}
+document.title = project.nombre;
+document.getElementById('projTitle').textContent = project.nombre;
+
+let currentTrack = 0;
+let clef = 'treble';
+let cursorPos = 0;
+let cursorStaffPos = 4; // vertical position on staff (staffPos units, 4 = B4 middle line)
+let octave = 4;
+let accidental = 0;
+let viewMode = 'pagina';
+let cursorVisible = true;
+
+// Rendering state used for cursor overlay positioning
+let noteXPositions = {}; // note index -> canvas x of that note
+let noteYPositions = {}; // note index -> canvas y (top) of the system it belongs to
+
+// Each note: {midi, duration(1-7), position(line position from staff top)}
+// Position mapping: for treble clef, middle C (C4, MIDI 60) is 2 ledger lines below
+// Staff lines from top: F5(77)=line1, D5(74)=line2, B4(71)=line3, G4(67)=line4, E4(64)=line5
+// Position 0 = above top line, negative = above, positive = below
+
+function midiToPos(midi){
+  // Treble clef: top line = F5 (77), each line/space = 2 semitones in diatonic scale
+  // Approximate: map midi note to diatonic position
+  const noteIdx = midi % 12;
+  const octaveNum = Math.floor(midi / 12) - 1;
+  // Diatonic positions: C=0, D=1, E=2, F=3, G=4, A=5, B=6
+  const chromatic = [0,0,1,1,2,3,3,4,4,5,5,6];
+  const diatonic = chromatic[noteIdx];
+  const absPos = octaveNum * 7 + diatonic;
+  // F5 is at octave 5, diatonic 3 = absPos 38
+  // That's staff line 1 (top). Staff line 5 (bottom) = E4 = octave 4, diatonic 2 = absPos 30
+  return 38 - absPos; // positive = above staff, negative = below
+}
+
+function posToMidi(pos){
+  const absNote = 38 - pos;
+  const octNum = Math.floor(absNote / 7);
+  const dia = ((absNote % 7) + 7) % 7;
+  const diaToChromatic = [0,2,4,5,7,9,11]; // C D E F G A B
+  const midi = (octNum + 1) * 12 + diaToChromatic[dia];
+  return Math.max(0, Math.min(127, midi));
+}
+
+function getNotes(){return project.tracks[currentTrack].notes}
+function getNoteAt(pos){return getNotes()[pos]}
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const staffArea = document.querySelector('.pent-area');
+
+// ---- Layout modo página ----
+const STAVE_HEIGHT = LINE_SP * 4;        // alto del pentagrama (4 espacios)
+const MEASURES_PER_SYSTEM = 6;           // compases por sistema
+const MEASURE_W = 190;                    // ancho de cada compás (px)
+const SYST_GAP = 70;                      // separación vertical entre sistemas
+const TRACK_GAP = 46;                     // separación vertical entre tracks (modo scroll)
+// Márgenes de la "hoja" (como en una partitura original)
+const PAGE_ML = 70;                       // margen izquierdo
+const PAGE_MR = 60;                      // margen derecho
+const PAGE_MT = 80;                      // margen superior (para título)
+const PAGE_MB = 60;                      // margen inferior
+const PAGE_COLOR = '#1c1c1e';            // color del "escritorio" detrás de la hoja
+const SHEET_COLOR = '#ffffff';           // color de la hoja
+
+function measureWidth(){
+  if(viewMode === 'scroll'){
+    // Ancho según el track con más compases (scroll muestra todos los tracks).
+    let maxMeas = 0;
+    project.tracks.forEach(t => { maxMeas = Math.max(maxMeas, buildMeasures(t.notes).length); });
+    return STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14 + Math.max(1, maxMeas) * MEASURE_W + 20;
+  }
+  return PAGE_ML + STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14 + MEASURES_PER_SYSTEM * MEASURE_W + PAGE_MR;
+}
+
+function measureHeight(){
+  if(viewMode === 'scroll'){
+    // Todos los tracks apilados: un pentagrama continuo por track.
+    const n = project.tracks.length || 1;
+    return STAVE_TOP + n * STAVE_HEIGHT + (n - 1) * TRACK_GAP + 40;
+  }
+  const numMeas = buildMeasures().length;
+  const numSys = Math.max(1, Math.ceil(numMeas / MEASURES_PER_SYSTEM));
+  return PAGE_MT + STAVE_TOP + numSys * STAVE_HEIGHT + (numSys - 1) * SYST_GAP + PAGE_MB;
+}
+
+function resize(){
+  draw(measureWidth(), measureHeight());
+}
+
+function noteY(pos){ return STAVE_TOP + pos * LINE_SP / 2; }
+
+function keyCount(ton){
+  return (KEY_SHARPS[ton] || 0) || (KEY_FLATS[ton] || 0) || 0;
+}
+
+let noteStartX = STAFF_LEFT + 100;
+
+// Posición rítmica (beat global) de la celda `i`. Si la celda guarda su `beat`,
+// se usa; si no, se acumulan las duraciones desde el inicio (compatibilidad).
+function getCellBeat(arr, i){
+  const n = arr ? arr[i] : null;
+  if(n && n.beat !== undefined) return n.beat;
+  let b = 0;
+  const a = arr || getNotes();
+  for(let k = 0; k < i && k < a.length; k++) b += DUR_BEATS[a[k].duration] || 4;
+  return b;
+}
+
+function buildMeasures(notesArr){
+  // Agrupa las notas en compases según SU POSICIÓN RÍTMICA (beat), respetando
+  // la métrica. La partitura tiene un nº fijo de compases (nBars / 33); los
+  // compases sin notas se devuelven vacíos ([]).
+  const notes = notesArr !== undefined ? notesArr : getNotes();
+  const mBeats = measureBeats(project.compas);
+  const totalBars = project.nBars || 33;
+  const map = {};
+  notes.forEach((n, i) => {
+    const b = getCellBeat(notes, i);
+    const bar = Math.max(0, Math.floor(b / mBeats));
+    (map[bar] = map[bar] || []).push(i);
+  });
+  const measures = [];
+  const maxBar = Math.max(Object.keys(map).length, totalBars);
+  for(let i = 0; i < maxBar; i++) measures.push(map[i] || []);
+  return measures;
+}
+
+// Nº de corcheas por grupo de beam según el denominador de la métrica.
+// Métrica simple (den 1,2,4): 2 corcheas = 1 negra (pulso). Compuesta (den 8): 3 corcheas = pulso.
+function beamCorcheasPerGroup(compas){
+  const den = parseInt(String(compas || '4/4').split('/')[1]) || 4;
+  return den === 8 ? 3 : 2;
+}
+
+function noteHeadY(n, sysTop){
+  const sp = (n.staffPos !== undefined) ? n.staffPos : n.position;
+  return sysTop + sp * LINE_SP / 2;
+}
+
+function drawNotehead(x, y, filled){
+  ctx.beginPath();
+  ctx.ellipse(x, y, HEAD_W / 2, HEAD_H / 2, -0.28, 0, Math.PI * 2);
+  if(filled){
+    ctx.fillStyle = '#000';
+    ctx.fill();
+  } else {
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+  }
+}
+
+function drawNoteAccidental(n, x, y){
+  if(n.accidental === 0) return;
+  ctx.fillStyle = '#000';
+  ctx.font = '20px "Noto Music", "Segoe UI Symbol", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(n.accidental === 1 ? '\u266F' : '\u266D', x - 16, y);
+}
+
+// Calcula los grupos de beam (índices dentro de `meas`) para un compás, según
+// la duración del pulso de la métrica y los overrides manuales ('separate'/'join').
+// Reutilizado por drawMeasure (dibujo) y toggleBeamOverride (tecla H).
+function computeBeamGroups(meas, notesArr, compas, pulseDur){
+  const FLAGS = {1:4, 2:3, 3:2, 4:1, 5:0, 6:0, 7:0};
+  const n = meas.length;
+  const flags = meas.map(i => notesArr[i].isEmpty ? 0 : (FLAGS[notesArr[i].duration] || 0));
+  if(pulseDur === undefined) pulseDur = beamCorcheasPerGroup(compas) * 0.5;
+  const groups = [];
+  let i = 0;
+  while(i < n){
+    // 'separate' fuerza gancho individual (la figura nunca entra en un beam).
+    if(flags[i] > 0 && !notesArr[meas[i]].isRest && notesArr[meas[i]].beamOverride !== 'separate'){
+      const g = [i];
+      let sum = DUR_BEATS[notesArr[meas[i]].duration] || 0.5;
+      let j = i + 1;
+      while(j < n && flags[j] > 0 && !notesArr[meas[j]].isRest && notesArr[meas[j]].beamOverride !== 'separate'){
+        const dj = DUR_BEATS[notesArr[meas[j]].duration] || 0.5;
+        // 'join' en la última figura del grupo permite unir más allá del pulso.
+        const force = notesArr[meas[g[g.length - 1]]] && notesArr[meas[g[g.length - 1]]].beamOverride === 'join';
+        if(!force && sum + dj > pulseDur + 1e-6) break;
+        g.push(j);
+        sum += dj;
+        j++;
+      }
+      // Un grupo de beam sólo tiene sentido con 2+ figuras unibles; una figura
+      // solitaria se dibuja con su gancho individual (drawNote).
+      if(g.length >= 2) groups.push(g);
+      i = j;
+    } else {
+      i++;
+    }
+  }
+  return groups;
+}
+
+// Dibuja un compás completo (lista de índices `meas` dentro de `notesArr`), con
+// unión automática de plicas (beams) de figuras cortas según la métrica.
+function drawMeasure(meas, notesArr, mx, mBeats, sysTop, needCoords, compas){
+  const n = meas.length;
+  const FLAGS = {1:4, 2:3, 3:2, 4:1, 5:0, 6:0, 7:0};
+  const xs = [], durs = [], flags = [];
+  if(n === 0) return;
+  // Inicio del compás (beat) para posicionar cada figura por su posición rítmica.
+  const barStart = Math.floor(getCellBeat(notesArr, meas[0]) / mBeats) * mBeats;
+  for(let i = 0; i < n; i++){
+    const nn = notesArr[meas[i]];
+    const dur = DUR_BEATS[nn.duration] || 4;
+    durs.push(dur);
+    flags.push((nn.isEmpty ? 0 : (FLAGS[nn.duration] || 0)));
+    const local = getCellBeat(notesArr, meas[i]) - barStart;
+    // Una celda vacía (placeholder del cursor/hueco) se centra exactamente en su
+    // beat: su duración es de relleno (p.ej. redonda) y no debe desplazarla.
+    const centerOff = nn.isEmpty ? 0 : (dur / mBeats) * MEASURE_W / 2;
+    xs.push(mx + (local / mBeats) * MEASURE_W + centerOff);
+  }
+
+  // Agrupar figuras cortas consecutivas (corcheas y menores) en beams. La
+  // agrupación se basa en la duración del pulso de la métrica (no en un nº fijo
+  // de corcheas), de modo que se respetan los pulsos y las síncopas: un grupo
+  // cubre hasta la duración de un pulso, y si una figura empieza en tiempo débil
+  // (síncopa), el grupo se forma hacia el pulso siguiente.
+  const pulseDur = beamCorcheasPerGroup(compas) * 0.5; // pulso en beats (negra simple, negra c/pto compuesta)
+  const groups = computeBeamGroups(meas, notesArr, compas, pulseDur);
+
+  const beamSet = new Set();
+  for(const g of groups){
+    const stemUp = g.reduce((s,k)=> s + ((notesArr[meas[k]].staffPos!==undefined)?notesArr[meas[k]].staffPos:notesArr[meas[k]].position), 0) / g.length >= 4;
+    const maxF = Math.max.apply(null, g.map(k => flags[k]));
+    const stemLen = 30;
+    let beamY;
+    if(stemUp){
+      beamY = Math.min.apply(null, g.map(k => noteHeadY(notesArr[meas[k]], sysTop) - stemLen));
+    } else {
+      beamY = Math.max.apply(null, g.map(k => noteHeadY(notesArr[meas[k]], sysTop) + stemLen));
+    }
+    const x0 = xs[g[0]];
+    const xN = xs[g[g.length - 1]];
+
+    for(const k of g){
+      const ny = noteHeadY(notesArr[meas[k]], sysTop);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1.7;
+      ctx.beginPath();
+      ctx.moveTo(xs[k], ny + (stemUp ? -HEAD_H / 2 : HEAD_H / 2));
+      ctx.lineTo(xs[k], beamY);
+      ctx.stroke();
+      drawLedgerLines((notesArr[meas[k]].staffPos!==undefined)?notesArr[meas[k]].staffPos:notesArr[meas[k]].position, xs[k], sysTop);
+      drawNoteAccidental(notesArr[meas[k]], xs[k], ny);
+      drawNotehead(xs[k], ny, true);
+      beamSet.add(k);
+    }
+    // Barras del beam (una por cada "cola" de la figura más corta del grupo).
+    for(let f = 0; f < maxF; f++){
+      const by = beamY + (stemUp ? f * 5 : -f * 5);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(x0 - 2, by, (xN - x0) + 4, 4);
+    }
+  }
+
+  for(i = 0; i < n; i++){
+    const idx = meas[i];
+    if(beamSet.has(i)) continue;
+    const nn = notesArr[idx];
+    if(nn.isRest){
+      drawRest(xs[i], nn.duration, sysTop);
+    } else if(nn.isEmpty){
+      // Celda vacía: no se dibuja figura ni silencio (sólo el usuario escribe silencios con R).
+    } else {
+      drawNote(xs[i], nn, sysTop);
+    }
+    if(needCoords){
+      noteXPositions[idx] = xs[i];
+      noteYPositions[idx] = sysTop;
+    }
+  }
+  if(needCoords){
+    for(i = 0; i < n; i++){
+      const idx = meas[i];
+      if(noteXPositions[idx] === undefined){
+        noteXPositions[idx] = xs[i];
+        noteYPositions[idx] = sysTop;
+      }
+    }
+  }
+}
+
+function draw(W, H){
+  if(viewMode === 'scroll'){
+    drawScroll(W, H);
+  } else {
+    drawPage(W, H);
+  }
+}
+
+function drawPage(W, H){
+  const w = W !== undefined ? W : measureWidth();
+  const h = H !== undefined ? H : measureHeight();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // Fondo del "escritorio" + hoja de partitura (blanca) con sombra.
+  ctx.fillStyle = PAGE_COLOR;
+  ctx.fillRect(0, 0, w, h);
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.55)';
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = SHEET_COLOR;
+  ctx.fillRect(6, 6, w - 12, h - 12);
+  ctx.restore();
+  ctx.fillStyle = SHEET_COLOR;
+  ctx.fillRect(6, 6, w - 12, h - 12);
+
+  // Desplaza todo el contenido dentro de la hoja según los márgenes de página.
+  ctx.save();
+  ctx.translate(PAGE_ML, PAGE_MT);
+
+  // Título de la partitura: nombre del proyecto, centrado sobre la primera pauta.
+  if(project.nombre){
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 22px "Segoe UI", serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(project.nombre, (w - 2 * PAGE_ML) / 2, STAVE_TOP / 2 - 14);
+  }
+
+  clef = project.clave === 'sol' ? 'treble' : 'bass';
+  const mBeats = measureBeats(project.compas);
+  const EPS = 1e-6;
+
+  const measures = buildMeasures();
+  const numSys = Math.max(1, Math.ceil(measures.length / MEASURES_PER_SYSTEM));
+  const prefixW = STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14;
+
+  noteXPositions = {};
+  noteYPositions = {};
+
+  for(let s = 0; s < numSys; s++){
+    const sysTop = STAVE_TOP + s * (STAVE_HEIGHT + SYST_GAP);
+    const measIn = measures.slice(s * MEASURES_PER_SYSTEM, (s + 1) * MEASURES_PER_SYSTEM);
+
+    // Dibuja el sistema (5 líneas), clave, armadura y métrica al inicio.
+    drawStaffSystem(prefixW + MEASURES_PER_SYSTEM * MEASURE_W, sysTop);
+    drawClefAndMeter(clef, project.compas, sysTop);
+    drawKeySignature(project.tonalidad, sysTop);
+
+    for(let mi = 0; mi < measIn.length; mi++){
+      const measIdx = s * MEASURES_PER_SYSTEM + mi;
+      const meas = measIn[mi];
+      const mx = prefixW + mi * MEASURE_W;
+
+      // Línea divisoria al inicio de cada compás.
+      if(mi > 0 || measIdx > 0){
+        drawBarline(mx, sysTop);
+      }
+      // Cierre del compás; doble barra al final (derecho) de cada sistema.
+      if(mi === measIn.length - 1){
+        drawFinalBarline(mx + MEASURE_W, sysTop);
+      } else {
+        drawBarline(mx + MEASURE_W, sysTop);
+      }
+
+      // Posiciona y dibuja las notas del compás con unión automática de plicas.
+      drawMeasure(meas, getNotes(), mx, mBeats, sysTop, true, project.compas);
+    }
+  }
+
+  drawCursor();
+  ctx.restore();
+  updateInfo();
+}
+
+// ---- Vista Scroll: una sola línea continua con scroll horizontal ----
+function drawScroll(W, H){
+  const w = W !== undefined ? W : measureWidth();
+  const h = H !== undefined ? H : measureHeight();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  ctx.fillStyle = PAGE_COLOR;
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = SHEET_COLOR;
+  ctx.fillRect(6, 6, w - 12, h - 12);
+
+  clef = project.clave === 'sol' ? 'treble' : 'bass';
+  const mBeats = measureBeats(project.compas);
+  const EPS = 1e-6;
+  const prefixW = STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14;
+
+  noteXPositions = {};
+  noteYPositions = {};
+
+  // Modo scroll: muestra TODOS los tracks, cada uno en su propio pentagrama
+  // dispuesto horizontalmente (uno debajo de otro).
+  project.tracks.forEach((track, ti) => {
+    const sysTop = STAVE_TOP + ti * (STAVE_HEIGHT + TRACK_GAP);
+    const measures = buildMeasures(track.notes);
+    const contentW = prefixW + Math.max(1, measures.length) * MEASURE_W;
+
+    drawStaffSystem(contentW, sysTop);
+    drawClefAndMeter(clef, project.compas, sysTop);
+    drawKeySignature(project.tonalidad, sysTop);
+
+    // Etiqueta del track a la izquierda del pentagrama.
+    ctx.save();
+    ctx.fillStyle = '#555';
+    ctx.font = 'bold 11px "Segoe UI", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(track.name, STAFF_LEFT, sysTop + 6);
+    ctx.restore();
+
+    for(let mi = 0; mi < measures.length; mi++){
+      const meas = measures[mi];
+      const mx = prefixW + mi * MEASURE_W;
+
+      if(mi > 0) drawBarline(mx, sysTop);
+      const isLast = mi === measures.length - 1;
+      if(isLast){
+        drawFinalBarline(mx + MEASURE_W, sysTop);
+      } else {
+        drawBarline(mx + MEASURE_W, sysTop);
+      }
+
+      drawMeasure(meas, track.notes, mx, mBeats, sysTop, ti === currentTrack, project.compas);
+    }
+  });
+
+  drawCursor();
+  updateInfo();
+}
+
+function drawBarline(x, sysTop){
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(x, sysTop + STAFF_LINE_YS[0] - STAVE_TOP);
+  ctx.lineTo(x, sysTop + STAFF_LINE_YS[4] - STAVE_TOP);
+  ctx.stroke();
+}
+
+function drawFinalBarline(x, sysTop){
+  const t0 = sysTop + STAFF_LINE_YS[0] - STAVE_TOP;
+  const t4 = sysTop + STAFF_LINE_YS[4] - STAVE_TOP;
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(x - 5, t0);
+  ctx.lineTo(x - 5, t4);
+  ctx.stroke();
+  ctx.lineWidth = 2.6;
+  ctx.beginPath();
+  ctx.moveTo(x, t0);
+  ctx.lineTo(x, t4);
+  ctx.stroke();
+}
+
+function drawStaffSystem(contentW, sysTop){
+  const top = sysTop;
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1.2;
+  for(const ly of STAFF_LINE_YS){
+    ctx.beginPath();
+    ctx.moveTo(STAFF_LEFT, top + ly - STAVE_TOP);
+    ctx.lineTo(contentW, top + ly - STAVE_TOP);
+    ctx.stroke();
+  }
+  // Barra inicial del sistema
+  ctx.lineWidth = 2.6;
+  ctx.beginPath();
+  ctx.moveTo(STAFF_LEFT, top + STAFF_LINE_YS[0] - STAVE_TOP);
+  ctx.lineTo(STAFF_LEFT, top + STAFF_LINE_YS[4] - STAVE_TOP);
+  ctx.stroke();
+}
+
+function drawClefAndMeter(clef, compas, sysTop){
+  ctx.fillStyle = '#000';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  if(clef === 'treble'){
+    ctx.font = '52px "Noto Music", "Segoe UI Symbol", "Bravura", "MScore", serif';
+    ctx.fillText('\uD834\uDD1E', STAFF_LEFT + 24, sysTop + 40);   // treble clef glyph
+  } else {
+    ctx.font = '48px "Noto Music", "Segoe UI Symbol", "Bravura", "MScore", serif';
+    ctx.fillText('\uD834\uDD22', STAFF_LEFT + 26, sysTop + 32);   // bass clef glyph
+  }
+  const [num, den] = String(compas).split('/');
+  ctx.font = 'bold 22px "Segoe UI", sans-serif';
+  ctx.fillText(num, STAFF_LEFT + 62, sysTop + 18);
+  ctx.fillText(den, STAFF_LEFT + 62, sysTop + 41);
+}
+
+function drawKeySignature(ton, sysTop){
+  const nSharp = KEY_SHARPS[ton] || 0;
+  const nFlat = KEY_FLATS[ton] || 0;
+  if(nSharp === 0 && nFlat === 0) return;
+  const positions = KEY_SIG_POS[clef][nSharp ? 'sharp' : 'flat'];
+  const n = nSharp || nFlat;
+  const glyph = nSharp ? '\u266F' : '\u266D';
+  ctx.fillStyle = '#000';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '24px "Noto Music", "Segoe UI Symbol", serif';
+  for(let i = 0; i < n; i++){
+    ctx.fillText(glyph, STAFF_LEFT + 82 + i * 14, sysTop + positions[i] * LINE_SP / 2);
+  }
+}
+
+function drawLedgerLines(pos, x, sysTop){
+  // Ledger lines are drawn on every staff-line pitch (positions 0,2,4,6,8 plus the
+  // extended line levels) between the note and the staff when the note is off the staff.
+  if(pos >= 0 && pos <= 8) return;
+  ctx.fillStyle = '#000';
+  const w2 = 14;
+  const yAt = p => sysTop + p * LINE_SP / 2;
+  if(pos < 0){
+    for(let p = 0; p >= pos; p -= 2){
+      ctx.fillRect(x - w2, yAt(p) - 1.2, w2 * 2, 2.4);
+    }
+  } else {
+    for(let p = 8; p <= pos; p += 2){
+      ctx.fillRect(x - w2, yAt(p) - 1.2, w2 * 2, 2.4);
+    }
+  }
+}
+
+function drawNote(x, n, sysTop){
+  const staffPos = (n.staffPos !== undefined) ? n.staffPos : n.position; // altura vertical
+  const y = sysTop + staffPos * LINE_SP / 2;
+  const d = n.duration;
+  const hasStem = d <= 6;
+  const stemUp = staffPos < 4;
+
+  drawLedgerLines(staffPos, x, sysTop);
+
+  if(n.accidental !== 0){
+    ctx.fillStyle = '#000';
+    ctx.font = '20px "Noto Music", "Segoe UI Symbol", serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(n.accidental === 1 ? '\u266F' : '\u266D', x - 15, y);
+  }
+
+  // notehead moderno (elipse estándar de notación moderna) + plica/corcheas como primitivas
+  const filled = d <= 5;
+  const hollow = (d === 6 || d === 7);
+  if(d === 7){
+    // Redonda: elipse alargada (orientación contraria, más acostada)
+    ctx.beginPath();
+    ctx.ellipse(x, y, HEAD_W / 2, HEAD_H / 2, 0.28, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.ellipse(x, y, HEAD_W / 2, HEAD_H / 2, -0.28, 0, Math.PI * 2);
+    if(filled){
+      ctx.fillStyle = '#000';
+      ctx.fill();
+    } else {
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+  }
+
+  if(hasStem){
+    const stemLen = 30;
+    const sx = stemUp ? x + HEAD_W / 2 - 1 : x - HEAD_W / 2 + 1;
+    const endY = stemUp ? y - stemLen : y + stemLen;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1.7;
+    ctx.beginPath();
+    ctx.moveTo(sx, y + (stemUp ? -HEAD_H / 2 : HEAD_H / 2));
+    ctx.lineTo(sx, endY);
+    ctx.stroke();
+
+    const nFlags = {1:4, 2:3, 3:2, 4:1, 5:0, 6:0}[d] || 0;
+    ctx.fillStyle = '#000';
+    for(let f = 0; f < nFlags; f++){
+      const fy = endY + (stemUp ? f * 8 : -f * 8);
+      ctx.beginPath();
+      if(stemUp){
+        ctx.moveTo(sx, fy);
+        ctx.quadraticCurveTo(sx + 9, fy + 1, sx + 7, fy + 10);
+        ctx.quadraticCurveTo(sx + 5, fy + 5, sx, fy + 5);
+      } else {
+        ctx.moveTo(sx, fy);
+        ctx.quadraticCurveTo(sx - 9, fy - 1, sx - 7, fy - 10);
+        ctx.quadraticCurveTo(sx - 5, fy - 5, sx, fy - 5);
+      }
+      ctx.fill();
+    }
+  }
+}
+
+function drawRest(x, duration, sysTop){
+  // Silencios (figuras musicales) usando la fuente Noto Music.
+  // Código de duración 1-7 -> glifo de silencio correspondiente.
+  const GLYPHS = {
+    7: '\uD834\uDD3B', // 𝄻 silencio de redonda
+    6: '\uD834\uDD3C', // 𝄼 silencio de blanca
+    5: '\uD834\uDD3D', // 𝄽 silencio de negra
+    4: '\uD834\uDD3E', // 𝄾 silencio de corchea
+    3: '\uD834\uDD3F', // 𝄿 silencio de semicorchea
+    2: '\uD834\uDD40', // 𝅀 silencio de fusa
+    1: '\uD834\uDD41'  // 𝅁 silencio de semifusa
+  };
+  const glyph = GLYPHS[duration] || '\uD834\uDD3D';
+
+  ctx.save();
+  ctx.fillStyle = '#000';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Redonda y blanca son barras horizontales en el espacio 3 (entre la 3ª y 4ª línea).
+  // La redonda cuelga de la 4ª línea; la blanca se apoya sobre la 3ª línea.
+  const rY3 = sysTop + 3 * LINE_SP / 2;
+  if(duration === 7){
+    ctx.font = '44px "Noto Music", "Segoe UI Symbol", serif';
+    ctx.fillText(glyph, x, rY3 + 3);   // redonda: offset total +3 (subida 1px)
+  } else if(duration === 6){
+    ctx.font = '44px "Noto Music", "Segoe UI Symbol", serif';
+    ctx.fillText(glyph, x, rY3 + 6);   // blanca: offset total +6 (bajada 2px más)
+  } else {
+    // Silencios de plica: verticales, centrados entre la 2ª y 4ª línea
+    ctx.font = '40px "Noto Music", "Segoe UI Symbol", serif';
+    ctx.fillText(glyph, x, sysTop + 6 * LINE_SP / 2);
+  }
+  ctx.restore();
+}
+
+function ensureCursorVisible(){
+  const sc = staffArea;
+  if(!sc) return;
+  let cx;
+  if(noteXPositions[cursorPos] !== undefined){
+    cx = noteXPositions[cursorPos];
+  } else {
+    const xs = Object.values(noteXPositions);
+    if(xs.length === 0) cx = STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14;
+    else cx = xs[xs.length - 1] + 30;
+  }
+  let cy = STAVE_TOP;
+  if(noteYPositions[cursorPos] !== undefined) cy = noteYPositions[cursorPos];
+  else {
+    const ks = Object.keys(noteYPositions).map(Number);
+    if(ks.length) cy = noteYPositions[Math.max(...ks)];
+  }
+  const pad = 40;
+  const r = sc.getBoundingClientRect ? sc.getBoundingClientRect() : {left:0,top:0,width:sc.clientWidth||800,height:sc.clientHeight||600};
+  const cxScreen = cx + sc.scrollLeft - sc.offsetLeft;
+  const cyScreen = cy + sc.scrollTop - sc.offsetTop;
+  if(cxScreen < pad) sc.scrollLeft += cxScreen - pad;
+  else if(cxScreen > r.width - pad) sc.scrollLeft += cxScreen - (r.width - pad);
+  if(cyScreen < pad) sc.scrollTop += cyScreen - pad;
+  else if(cyScreen > r.height - pad) sc.scrollTop += cyScreen - (r.height - pad);
+}
+
+function drawCursor(){
+  if(!cursorVisible) return;
+  const notes = getNotes();
+  let cx;
+  if(noteXPositions[cursorPos] !== undefined){
+    cx = noteXPositions[cursorPos];
+  } else {
+    const xs = Object.values(noteXPositions);
+    if(xs.length === 0){
+      cx = STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14;
+    } else {
+      const sorted = xs.slice().sort((a, b) => a - b);
+      const last = sorted[sorted.length - 1];
+      const first = sorted[0];
+      const spacing = sorted.length > 1 ? (last - first) / (sorted.length - 1) : 1;
+      cx = last + spacing;
+    }
+  }
+
+  // Sistema al que pertenece el cursor (para posicionar verticalmente).
+  let sysTop = STAVE_TOP;
+  if(noteYPositions[cursorPos] !== undefined){
+    sysTop = noteYPositions[cursorPos];
+  } else {
+    const keys = Object.keys(noteYPositions).map(Number);
+    if(keys.length > 0){
+      const lastSys = noteYPositions[Math.max(...keys)];
+      sysTop = lastSys;
+    }
+  }
+  const cy = sysTop + cursorStaffPos * LINE_SP / 2;
+  const sysTopLine0 = sysTop + STAFF_LINE_YS[0] - STAVE_TOP;
+  const sysTopLine4 = sysTop + STAFF_LINE_YS[4] - STAVE_TOP;
+
+  ctx.strokeStyle = '#2ecc71';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(cx, sysTopLine0 - 12);
+  ctx.lineTo(cx, sysTopLine4 + 12);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = '#2ecc71';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 9, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
+function updateInfo(){
+  const notes = getNotes();
+  document.getElementById('infoKey').textContent = `Clave: ${project.clave==='sol'?'Sol':'Fa'}`;
+  document.getElementById('infoCompas').textContent = `Compás: ${project.compas}`;
+  document.getElementById('infoTona').textContent = `Tonalidad: ${project.tonalidad}`;
+  document.getElementById('infoCursor').textContent = `Pos: ${cursorPos+1}/${notes.length||1}`;
+  const cur = getNoteAt(cursorPos);
+  const midi = cur ? cur.midi : posToMidi(cursorStaffPos);
+  const name = NOTE_NAMES[midi%12];
+  const oct = Math.floor(midi/12)-1;
+  if(cur && cur.isRest){
+    document.getElementById('infoNote').textContent = `Silencio`;
+  } else if(cur){
+    document.getElementById('infoNote').textContent = `Nota: ${name}${oct}`;
+  } else {
+    document.getElementById('infoNote').textContent = `Cursor: ${name}${oct}`;
+  }
+  document.getElementById('infoOctave').textContent = `Octava: ${oct}`;
+  const beamTxt = cur && !cur.isRest && cur.beamOverride
+    ? (cur.beamOverride === 'separate' ? 'Separar plicas' : 'Unir plicas')
+    : 'Auto';
+  const infoBeam = document.getElementById('infoBeam');
+  if(infoBeam) infoBeam.textContent = `Plicas: ${beamTxt}`;
+}
+
+function renderTrackList(){
+  const el = document.getElementById('trackList');
+  el.innerHTML = '';
+  project.tracks.forEach((t,i)=>{
+    const d = document.createElement('div');
+    d.className = 'track-item' + (i===currentTrack?' active':'');
+    d.textContent = t.name;
+    d.onclick = ()=>{ currentTrack=i; renderTrackList(); draw(); };
+    el.appendChild(d);
+  });
+}
+
+function beatOf(index, arr){
+  const a = arr || getNotes();
+  if(a[index] && a[index].beat !== undefined) return a[index].beat;
+  let b = 0;
+  for(let i = 0; i < index && i < a.length; i++) b += DUR_BEATS[a[i].duration] || 4;
+  return b;
+}
+
+function durFromBeats(b){
+  for(const k in DUR_BEATS){
+    if(Math.abs(DUR_BEATS[k] - b) < 1e-6) return parseInt(k);
+  }
+  return 5; // negra por defecto
+}
+
+// Devuelve el índice de la celda en la posición rítmica `targetBeat`, creando una
+// celda de destino vacía (isEmpty) si aún no existe. Respeta la métrica: el array
+// se mantiene ordenado por beat.
+function advanceCursorToBeat(targetBeat, notes){
+  const EPS = 1e-6;
+  let idx = 0;
+  while(idx < notes.length && beatOf(idx, notes) < targetBeat - EPS) idx++;
+  if(idx < notes.length && Math.abs(beatOf(idx, notes) - targetBeat) < EPS){
+    return idx;
+  }
+  notes.splice(idx, 0, {midi:0, duration:durFromBeats(measureBeats(project.compas)), staffPos:4, accidental:0, isEmpty:true, beat: targetBeat});
+  return idx;
+}
+
+function addNote(duration){
+  const notes = getNotes();
+  const d = DUR_BEATS[duration] || 4;
+  const mBeats = measureBeats(project.compas);
+  const EPS = 1e-6;
+  const startBeat = beatOf(cursorPos, notes);
+  const compStart = Math.floor(startBeat / mBeats) * mBeats;
+  // Respetar la métrica: si la figura cruza el borde del compás, se reubica al
+  // inicio del siguiente compás (nunca se dibuja cruzando la barra de compás).
+  let beat = startBeat;
+  if(beat + d > compStart + mBeats + EPS){
+    beat = compStart + mBeats;
+  }
+  const midi = posToMidi(cursorStaffPos);
+  const finalMidi = Math.max(0, Math.min(127, midi + accidental));
+  const note = {midi: finalMidi, duration, staffPos: cursorStaffPos, accidental, isRest:false, beat};
+
+  // Garantizar una columna en el cursor (p.ej. al navegar a un compás posterior).
+  while(notes.length <= cursorPos){
+    notes.push({midi:0, duration:durFromBeats(measureBeats(project.compas)), staffPos:4, accidental:0, isEmpty:true});
+  }
+  const existing = notes[cursorPos];
+  if(existing){
+    existing.duration = duration;
+    existing.midi = finalMidi;
+    existing.accidental = accidental;
+    existing.staffPos = cursorStaffPos;
+    existing.isRest = false;
+    existing.isEmpty = false;
+    existing.beat = beat;
+  } else {
+    notes.splice(cursorPos, 0, note);
+    notes[cursorPos].beat = beat;
+  }
+  saveProjects(getProjects().map((p,i)=>i===projIdx?project:p));
+  draw();
+
+  // Avance rítmico: mover el cursor a la siguiente posición rítmica según la
+  // duración de la figura escrita, respetando la métrica del compás.
+  cursorPos = advanceCursorToBeat(beat + d, notes);
+  draw();
+  ensureCursorVisible();
+  cursorVisible = true;
+}
+
+// Convierte una nota en silencio conservando su duración:
+// - si el cursor está sobre una nota existente, la convierte (R sobre la nota).
+// - si no, convierte la última escrita (cursorPos - 1): p.ej. 5 + R = silencio de negra.
+function makeRest(){
+  const notes = getNotes();
+  // Si el cursor está sobre una nota existente, la convierte a silencio.
+  // Si no, usa la nota recién escrita (cursorPos - 1), para el flujo "número + R".
+  const note = (notes[cursorPos] && !notes[cursorPos].isRest) ? notes[cursorPos] : notes[cursorPos - 1];
+  if(note){
+    note.isRest = true;
+    note.isEmpty = false;
+    saveProjects(getProjects().map((p,i)=>i===projIdx?project:p));
+  }
+  draw();
+}
+
+function deleteNote(){
+  const notes = getNotes();
+  // Borra la nota de la columna actual del cursor (índice del array).
+  if(cursorPos >= 0 && cursorPos < notes.length){
+    notes.splice(cursorPos, 1);
+  }
+  saveProjects(getProjects().map((p,i)=>i===projIdx?project:p));
+  draw();
+}
+
+// Tecla H: separa/une manualmente las plicas del PAR cuya nota IZQUIERDA está
+// bajo el cursor. Si el cursor está en la nota derecha del par (o en una figura
+// suelta), no hace nada.
+function toggleBeamOverride(){
+  const notes = getNotes();
+  if(cursorPos < 0 || cursorPos >= notes.length) return;
+  const n = notes[cursorPos];
+  if(!n || n.isRest) return;
+  if(n.duration && n.duration > 4) return;
+
+  // Localizar el compás de la nota del cursor y quién lo compone.
+  const mBeats = measureBeats(project.compas);
+  const meas = buildMeasures(notes).find(m => m.includes(cursorPos));
+  if(!meas || meas.length < 2) return;
+
+  // Recalcular los beams tal como se dibujan. La nota es la IZQUIERDA del par
+  // sólo si NO está unida por un beam a una nota anterior (es decir, es la
+  // primera figura de su grupo). Si está unida desde la izquierda es la DERECHA.
+  const groups = computeBeamGroups(meas, notes, project.compas);
+  const myGroup = groups.find(g => g.includes(cursorPos));
+  const isLeft = !myGroup || myGroup[0] === cursorPos;
+  if(!isLeft) return;
+
+  // Alternar en la nota izquierda: no-override(auto) -> SEPARAR -> auto (unir).
+  n.beamOverride = n.beamOverride === 'separate' ? undefined : 'separate';
+  saveProjects(getProjects().map((p,i)=>i===projIdx?project:p));
+  cursorVisible = true;   // asegura que el cursor reaparezca tras la edición
+  draw();
+  ensureCursorVisible();
+  updateInfo();
+}
+
+let audioCtx = null;
+function getAudio(){
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  }
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playNote(midi){
+  try{
+    const actx = getAudio();
+    // Frecuencia según la especificación del .txt: f = 440 × 2^((m-69)/12)
+    const freq = 440 * Math.pow(2, (midi-69)/12);
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.3, actx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime+0.8);
+    osc.connect(gain);
+    gain.connect(actx.destination);
+    osc.start();
+    osc.stop(actx.currentTime+0.8);
+  }catch(err){
+    // Audio no disponible: ignora el error sin romper la edición de partituras
+  }
+}
+
+// Keyboard controls
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  const arrow = e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight';
+
+  // Arrow keys map to O (up), L (down), K (left), Ñ (right)
+  const nav = arrow ? {
+    ArrowUp: 'o',
+    ArrowDown: 'l',
+    ArrowLeft: 'k',
+    ArrowRight: 'ñ'
+  }[e.key] : k;
+
+  if(nav==='o'){
+    // Up: move cursor up one step (line or space)
+    if(arrow) e.preventDefault();
+    cursorStaffPos = Math.max(-4, cursorStaffPos - 1);
+    octave = Math.floor(posToMidi(cursorStaffPos) / 12) - 1;
+    draw(); ensureCursorVisible();
+  }
+  else if(nav==='l'){
+    // Down: move cursor down one step (line or space)
+    if(arrow) e.preventDefault();
+    cursorStaffPos = Math.min(14, cursorStaffPos + 1);
+    octave = Math.floor(posToMidi(cursorStaffPos) / 12) - 1;
+    draw(); ensureCursorVisible();
+  }
+  else if(nav==='k'){cursorPos = Math.max(0, cursorPos-1); if(arrow) e.preventDefault(); draw(); ensureCursorVisible();}
+  else if(nav==='ñ'){cursorPos++; if(arrow) e.preventDefault(); draw(); ensureCursorVisible();}
+  else if(k==='p'){
+    // Scroll view to the right
+    staffArea.scrollBy({left: 200, behavior: 'smooth'});
+  }
+  else if(k==='i'){
+    // Scroll view to the left
+    staffArea.scrollBy({left: -200, behavior: 'smooth'});
+  }
+  else if(k>='1'&&k<='7'){addNote(parseInt(k)); playNote(Math.max(0, Math.min(127, posToMidi(cursorStaffPos) + accidental)));}
+  else if(k==='r'){makeRest();}
+  else if(k==='h'){toggleBeamOverride();}
+  else if(k==='+'||k==='='){accidental=1; draw();}
+  else if(k==='-'){accidental=-1; draw();}
+  else if(k==='0'){accidental=0; draw();}
+  else if(k==='backspace'||k==='delete'){e.preventDefault(); deleteNote();}
+});
+
+function setViewMode(mode){
+  viewMode = mode;
+  resize();
+  document.querySelectorAll('.view-opt').forEach(b=>{
+    b.classList.toggle('active', b.dataset.view === viewMode);
+  });
+}
+
+document.getElementById('btnVista').onclick = ()=>{
+  const modal = document.getElementById('modal');
+  const mt = document.getElementById('modalTracks');
+  mt.innerHTML = '';
+  project.tracks.forEach((t,i)=>{
+    const d = document.createElement('div');
+    d.className = 'modal-track';
+    d.textContent = t.name;
+    d.onclick = ()=>{ currentTrack=i; modal.classList.remove('show'); renderTrackList(); draw(); };
+    mt.appendChild(d);
+  });
+  // Estado de los botones de vista según el modo actual.
+  document.querySelectorAll('.view-opt').forEach(b=>{
+    b.classList.toggle('active', b.dataset.view === viewMode);
+  });
+  modal.classList.add('show');
+};
+
+document.querySelectorAll('.view-opt').forEach(b=>{
+  b.onclick = ()=>{
+    setViewMode(b.dataset.view);
+    // En modo Página con varios tracks, la página pedirá seleccionar cuál mostrar:
+    // mantenemos el modal abierto para que elija en la lista de tracks.
+    if(b.dataset.view === 'pagina' && project.tracks.length > 1){
+      // no cerrar: el usuario elige el track en la lista de abajo
+    } else {
+      document.getElementById('modal').classList.remove('show');
+    }
+  };
+});
+
+document.getElementById('modalClose').onclick = ()=> document.getElementById('modal').classList.remove('show');
+document.getElementById('modal').onclick = e => { if(e.target.id==='modal') e.target.classList.remove('show'); };
+
+document.getElementById('addTrack').onclick = ()=>{
+  // Cada track nuevo comienza en blanco (sin notas ni silencios por defecto).
+  const notes = [];
+  project.tracks.push({name:`Track ${project.tracks.length+1}`, notes});
+  saveProjects(getProjects().map((p,i)=>i===projIdx?project:p));
+  renderTrackList();
+};
+
+document.getElementById('btnAyuda').onclick = ()=> document.getElementById('helpBox').classList.toggle('show');
+
+document.getElementById('projTitle').textContent = project.nombre;
+
+window.addEventListener('resize', resize);
+resize();
+renderTrackList();
+
+// Ensure the music font (clefs and rests) is loaded before/after the first paint
+if(document.fonts && document.fonts.load){
+  Promise.all([
+    document.fonts.load('52px "Noto Music"'),
+    document.fonts.load('40px "Noto Music"'),
+    document.fonts.load('24px "Noto Music"'),
+    document.fonts.load('18px "Noto Music"')
+  ]).then(()=>{
+    resize();
+  }).catch(()=>{});
+}
+
+// Cursor blink: toggle every 500ms
+setInterval(()=>{
+  cursorVisible = !cursorVisible;
+  draw();
+}, 500);
+</script>
+</body>
+</html>

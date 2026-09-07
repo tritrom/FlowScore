@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flow Score - Principal</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+h1{margin:30px 0 10px;font-size:2rem;color:#2ecc71}
+.sub{color:#888;margin-bottom:30px;font-size:.9rem}
+#proyectos{width:90%;max-width:700px;display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+.proj-card{background:#16213e;border:1px solid #0f3460;border-radius:8px;padding:16px 20px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:.2s}
+.proj-card:hover{border-color:#2ecc71;transform:translateY(-2px)}
+.proj-card .info{display:flex;flex-direction:column;gap:4px}
+.proj-card .name{font-size:1.1rem;font-weight:600;color:#fff}
+.proj-card .meta{font-size:.8rem;color:#888}
+.proj-card .del{background:#2ecc71;border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;line-height:1}
+#nuevoBtn{margin:10px 0 40px;padding:14px 36px;background:#2ecc71;color:#fff;border:none;border-radius:8px;font-size:1.1rem;cursor:pointer;font-weight:600;transition:.2s}
+#nuevoBtn:hover{background:#27ae60}
+#modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);justify-content:center;align-items:center;z-index:10}
+#modal.show{display:flex}
+.modal-box{background:#16213e;border:1px solid #0f3460;border-radius:12px;padding:30px;width:90%;max-width:420px}
+.modal-box h2{margin-bottom:20px;color:#2ecc71;font-size:1.3rem}
+.modal-box label{display:block;margin:10px 0 4px;font-size:.85rem;color:#aaa}
+.modal-box input,.modal-box select{width:100%;padding:10px;border-radius:6px;border:1px solid #0f3460;background:#1a1a2e;color:#fff;font-size:.95rem}
+.modal-box .btns{display:flex;gap:10px;margin-top:24px;justify-content:flex-end}
+.modal-box .btns button{padding:10px 24px;border:none;border-radius:6px;font-size:.95rem;cursor:pointer;font-weight:600}
+.btn-aceptar{background:#2ecc71;color:#fff}
+.btn-cancelar{background:#333;color:#aaa}
+#vacio{text-align:center;color:#555;margin-top:40px;font-size:.95rem}
+</style>
+</head>
+<body>
+
+<h1>Flow Score</h1>
+<p class="sub">Notación musical sencilla</p>
+
+<div id="vacio">No hay proyectos. Crea uno nuevo.</div>
+<div id="proyectos"></div>
+<button id="nuevoBtn">+ Nuevo Proyecto</button>
+
+<div id="modal">
+<div class="modal-box">
+<h2>Nuevo Proyecto</h2>
+<label>Nombre</label>
+<input type="text" id="mNombre" placeholder="Mi canción">
+<label>Clave</label>
+<select id="mClave">
+<option value="sol">Sol</option>
+<option value="fa">Fa</option>
+</select>
+<label>Compás</label>
+<select id="mCompas">
+<option value="4/4">4/4</option>
+<option value="3/4">3/4</option>
+<option value="2/4">2/4</option>
+<option value="6/8">6/8</option>
+<option value="5/4">5/4</option>
+</select>
+<label>Tonalidad</label>
+<select id="mTonalidad">
+<option value="C">C (Do)</option>
+<option value="G">G (Sol)</option>
+<option value="D">D (Re)</option>
+<option value="A">A (La)</option>
+<option value="E">E (Mi)</option>
+<option value="B">B (Si)</option>
+<option value="F">F (Fa)</option>
+<option value="Bb">Bb (Sib)</option>
+<option value="Eb">Eb (Mib)</option>
+<option value="Ab">Ab (Lab)</option>
+<option value="Db">Db (Reb)</option>
+<option value="Gb">Gb (Solb)</option>
+</select>
+<div class="btns">
+<button class="btn-cancelar" id="btnCancel">Cancelar</button>
+<button class="btn-aceptar" id="btnAcept">Crear</button>
+</div>
+</div>
+</div>
+
+<script>
+function getProjects(){return JSON.parse(localStorage.getItem('ps_projects')||'[]')}
+function saveProjects(p){localStorage.setItem('ps_projects',JSON.stringify(p))}
+
+const KEY_SIG = {
+  C:[], G:['F#'], D:['F#','C#'], A:['F#','C#','G#'], E:['F#','C#','G#','D#'], B:['F#','C#','G#','D#','A#'],
+  F:['Bb'], Bb:['Bb','Eb'], Eb:['Bb','Eb','Ab'], Ab:['Bb','Eb','Ab','Db'], Db:['Bb','Eb','Ab','Db','Gb'], Gb:['Bb','Eb','Ab','Db','Gb','Cb']
+};
+
+function render(){
+  const ps = getProjects();
+  const el = document.getElementById('proyectos');
+  const vacio = document.getElementById('vacio');
+  el.innerHTML = '';
+  vacio.style.display = ps.length ? 'none' : 'block';
+  ps.forEach((p,i) => {
+    const d = document.createElement('div');
+    d.className = 'proj-card';
+    d.innerHTML = `<div class="info"><span class="name">${p.nombre}</span><span class="meta">${p.clave.toUpperCase()} | ${p.compas} | ${p.tonalidad} (${KEY_SIG[p.tonalidad].length?KEY_SIG[p.tonalidad].length+' alteraciones':'vacía'})</span></div><button class="del" data-i="${i}">&times;</button>`;
+    d.querySelector('.del').onclick = e => { e.stopPropagation(); ps.splice(i,1); saveProjects(ps); render(); };
+    d.onclick = () => { window.location.href = `proyecto.html?id=${i}`; };
+    el.appendChild(d);
+  });
+}
+
+document.getElementById('nuevoBtn').onclick = () => document.getElementById('modal').classList.add('show');
+document.getElementById('btnCancel').onclick = () => document.getElementById('modal').classList.remove('show');
+document.getElementById('modal').onclick = e => { if(e.target.id==='modal') document.getElementById('modal').classList.remove('show'); };
+
+document.getElementById('btnAcept').onclick = () => {
+  const nombre = document.getElementById('mNombre').value.trim() || 'Sin nombre';
+  const clave = document.getElementById('mClave').value;
+  const compas = document.getElementById('mCompas').value;
+  const tonalidad = document.getElementById('mTonalidad').value;
+  const ps = getProjects();
+  // Partitura en blanco de 33 compases (sin notas ni silencios por defecto).
+  const notes = [];
+  ps.push({nombre,clave,compas,tonalidad,nBars:33,tracks:[{name:'Track 1',notes}]});
+  saveProjects(ps);
+  document.getElementById('modal').classList.remove('show');
+  render();
+};
+
+render();
+</script>
+</body>
+</html>
