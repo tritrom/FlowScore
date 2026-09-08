@@ -9,7 +9,7 @@ root = "/public"
 log-level = "error"
 
 #### Cache Control headers
-cache-control-headers = true
+cache-control-headers = false
 
 #### Auto Compression
 compression = true
@@ -53,6 +53,10 @@ compression-static = true
 [advanced]
 
 #### HTTP Headers customization (examples only)
+
+[[advanced.headers]]
+source = "**/*.html"
+headers = { Cache-Control = "no-store, max-age=0" }
 
 #### a. Oneline version
 # [[advanced.headers]]

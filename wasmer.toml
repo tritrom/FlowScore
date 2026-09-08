@@ -1,11 +1,20 @@
 [package]
 name = "tritrom/flowscores"
-version = "0.1.0"
+version = "0.1.1"
 description = "FlowScore - editor de partituras"
 license = "MIT"
 
 [dependencies]
-"wasmer/static-web-server" = "1"
+"wasmer/static-web-server" = "^1"
 
 [fs]
-public = "public"
+"/public" = "public"
+"/settings" = "settings"
+
+[[command]]
+name = "script"
+module = "wasmer/static-web-server:webserver"
+runner = "https://webc.org/runner/wasi"
+
+[command.annotations.wasi]
+main-args = ["-w", "/settings/config.toml"]
