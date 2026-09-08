@@ -31,6 +31,16 @@ body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;height:1
 .track-item.active{background:#0f3460;border-color:#2ecc71;color:#fff}
 .add-track{margin:8px;padding:10px;border:2px dashed #333;border-radius:6px;text-align:center;color:#555;cursor:pointer;font-size:1.2rem}
 .add-track:hover{border-color:#2ecc71;color:#2ecc71}
+.vkbd{display:none;background:#16213e;border-top:1px solid #0f3460;padding:6px 8px 10px;flex-shrink:0}
+.vkbd.show{display:block}
+.vkbd-head{display:flex;align-items:center;justify-content:space-between;padding:0 4px 6px}
+.vkbd-head span{font-size:.7rem;color:#888;text-transform:uppercase;letter-spacing:1px}
+.vkbd-head button{background:none;border:none;color:#888;font-size:1.1rem;cursor:pointer;padding:0 8px}
+.vkbd-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.vkbd-grid button{padding:10px 0;background:#0f3460;color:#fff;border:1px solid #1a1a4e;border-radius:6px;font-size:1rem;cursor:pointer;touch-action:manipulation;min-height:44px}
+.vkbd-grid button:active{background:#2ecc71;color:#fff}
+.vkbd-grid .nav{color:#aaa}
+#vkBlank{visibility:hidden}
 .info-bar{padding:6px 10px;background:#0f3460;font-size:.7rem;color:#aaa;display:flex;flex-wrap:wrap;gap:4px 16px;flex-shrink:0;border-top:1px solid #1a1a2e}
 .info-bar span{white-space:nowrap}
 canvas{display:block}
@@ -66,6 +76,7 @@ canvas{display:block}
 <span class="title" id="projTitle">Proyecto</span>
 <button id="btnTracks">Tracks</button>
 <button id="btnVista">Cambiar vista</button>
+<button id="btnTeclado">Teclado</button>
 <button id="btnAyuda">Ayuda (?)</button>
 </div>
 
@@ -75,6 +86,32 @@ canvas{display:block}
 <div class="panel-head" id="panelHead"><h3>Tracks</h3><button class="panel-toggle" id="panelToggle" title="Desplegar/ocultar">▾</button></div>
 <div class="track-list" id="trackList"></div>
 <div class="add-track" id="addTrack">+</div>
+</div>
+</div>
+
+<div class="vkbd" id="vkbd">
+<div class="vkbd-head"><span>Teclado</span><button id="vkHide" title="Ocultar teclado">▾</button></div>
+<div class="vkbd-grid">
+<button data-key="7" title="7 - Redonda">7</button>
+<button data-key="6" title="6 - Blanca">6</button>
+<button data-key="5" title="5 - Negra">5</button>
+<button data-key="4" title="4 - Corchea">4</button>
+<button data-key="3" title="3 - Semicorchea">3</button>
+<button data-key="2" title="2 - Fusa">2</button>
+<button data-key="1" title="1 - Semifusa">1</button>
+<button data-key="+" title="Sostenido">♯</button>
+<button data-key="-" title="Bemol">♭</button>
+<button data-key="0" title="Sin alteración">♮</button>
+<button data-key="k" class="nav" title="Izquierda">◀</button>
+<button data-key="o" class="nav" title="Arriba">▲</button>
+<button data-key="l" class="nav" title="Abajo">▼</button>
+<button data-key="ñ" class="nav" title="Derecha">▶</button>
+<button data-key="r" title="Silencio">R</button>
+<button data-key="i" class="nav" title="Scroll derecha">»</button>
+<button data-key="p" class="nav" title="Scroll izquierda">«</button>
+<button data-key="backspace" title="Borrar nota">⌫</button>
+<button data-key="h" title="Alternar plicas">Plicas</button>
+<button id="vkBlank"></button>
 </div>
 </div>
 
@@ -1200,6 +1237,19 @@ function togglePanel(){
 }
 document.getElementById('panelHead').onclick = togglePanel;
 document.getElementById('btnTracks').onclick = togglePanel;
+
+function vkSend(key){ document.dispatchEvent(new KeyboardEvent('keydown', {key: key, bubbles: true})); }
+document.querySelectorAll('.vkbd-grid [data-key]').forEach(b=>{
+  b.onclick = ()=> vkSend(b.dataset.key);
+});
+function vkShow(){ document.getElementById('vkbd').classList.add('show'); }
+function vkHide(){ document.getElementById('vkbd').classList.remove('show'); }
+document.getElementById('vkHide').onclick = vkHide;
+document.getElementById('btnTeclado').onclick = ()=>{
+  document.getElementById('vkbd').classList.toggle('show');
+};
+const vkMobile = window.matchMedia && (window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(max-width: 768px)').matches);
+if(vkMobile) vkShow();
 
 document.getElementById('btnAyuda').onclick = ()=> document.getElementById('helpBox').classList.toggle('show');
 
