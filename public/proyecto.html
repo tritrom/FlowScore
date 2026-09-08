@@ -280,6 +280,41 @@ const PAGE_MB = 60;                      // margen inferior
 const PAGE_COLOR = '#1c1c1e';            // color del "escritorio" detrás de la hoja
 const SHEET_COLOR = '#ffffff';           // color de la hoja
 
+// ---- Diseño adaptativo para pantallas angostas (celulares) ----
+// Se reducen los márgenes de la hoja y el nº de compases por sistema para que la
+// partitura se vea a tamaño casi natural, sin scroll horizontal ni letra minúscula.
+const PAGE_ML_M = 24;                     // margen izq. en móvil
+const PAGE_MR_M = 16;                     // margen der. en móvil
+const PAGE_MT_M = 40;                     // margen sup. en móvil
+const PAGE_MB_M = 24;                     // margen inf. en móvil
+let curScale = 1;                         // escala CSS del canvas (ajuste a ancho)
+
+// El layout se adapta cuando el ancho disponible es menor que el de un sistema
+// de escritorio completo (6 compases). Así cubre celulares y tablets/landscape.
+function desktopContentW(){
+  return PAGE_ML + STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14 + MEASURES_PER_SYSTEM * MEASURE_W + PAGE_MR;
+}
+function useMobileLayout(){
+  return !!(staffArea && staffArea.clientWidth && staffArea.clientWidth < desktopContentW());
+}
+
+function pageMargins(){
+  if(!useMobileLayout()) return {ml:PAGE_ML, mr:PAGE_MR, mt:PAGE_MT, mb:PAGE_MB};
+  return {ml:PAGE_ML_M, mr:PAGE_MR_M, mt:PAGE_MT_M, mb:PAGE_MB_M};
+}
+
+function measuresPerSystem(){
+  if(!useMobileLayout()) return MEASURES_PER_SYSTEM;
+  const m = pageMargins();
+  const avail = staffArea.clientWidth - m.ml - m.mr - STAFF_LEFT - 100 - keyCount(project.tonalidad) * 14 - 20;
+  return Math.max(1, Math.min(MEASURES_PER_SYSTEM, Math.floor(avail / MEASURE_W)));
+}
+
+function fitScaleFor(w){
+  if(!useMobileLayout()) return 1;
+  return Math.min(1, staffArea.clientWidth / Math.max(1, w));
+}
+
 function measureWidth(){
   if(viewMode === 'scroll'){
     // Ancho según el track con más compases (scroll muestra todos los tracks).
@@ -287,7 +322,8 @@ function measureWidth(){
     project.tracks.forEach(t => { maxMeas = Math.max(maxMeas, buildMeasures(t.notes).length); });
     return STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14 + Math.max(1, maxMeas) * MEASURE_W + 20;
   }
-  return PAGE_ML + STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14 + MEASURES_PER_SYSTEM * MEASURE_W + PAGE_MR;
+  const m = pageMargins();
+  return m.ml + STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14 + measuresPerSystem() * MEASURE_W + m.mr;
 }
 
 function measureHeight(){
@@ -296,9 +332,10 @@ function measureHeight(){
     const n = project.tracks.length || 1;
     return STAVE_TOP + n * STAVE_HEIGHT + (n - 1) * TRACK_GAP + 40;
   }
+  const m = pageMargins();
   const numMeas = buildMeasures().length;
-  const numSys = Math.max(1, Math.ceil(numMeas / MEASURES_PER_SYSTEM));
-  return PAGE_MT + STAVE_TOP + numSys * STAVE_HEIGHT + (numSys - 1) * SYST_GAP + PAGE_MB;
+  const numSys = Math.max(1, Math.ceil(numMeas / measuresPerSystem()));
+  return m.mt + STAVE_TOP + numSys * STAVE_HEIGHT + (numSys - 1) * SYST_GAP + m.mb;
 }
 
 function resize(){
@@ -522,6 +559,12 @@ function drawPage(W, H){
   canvas.height = h * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+  // En móvil se reduce el canvas por CSS para que quepa a lo ancho (sin perder
+  // nitidez, porque la resolución interna queda intacta).
+  curScale = fitScaleFor(w);
+  canvas.style.width = Math.round(w * curScale) + 'px';
+  canvas.style.height = Math.round(h * curScale) + 'px';
+
   // Fondo del "escritorio" + hoja de partitura (blanca) con sombra.
   ctx.fillStyle = PAGE_COLOR;
   ctx.fillRect(0, 0, w, h);
@@ -535,8 +578,9 @@ function drawPage(W, H){
   ctx.fillRect(6, 6, w - 12, h - 12);
 
   // Desplaza todo el contenido dentro de la hoja según los márgenes de página.
+  const mpg = pageMargins();
   ctx.save();
-  ctx.translate(PAGE_ML, PAGE_MT);
+  ctx.translate(mpg.ml, mpg.mt);
 
   // Título de la partitura: nombre del proyecto, centrado sobre la primera pauta.
   if(project.nombre){
@@ -544,7 +588,7 @@ function drawPage(W, H){
     ctx.font = 'bold 22px "Segoe UI", serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(project.nombre, (w - 2 * PAGE_ML) / 2, STAVE_TOP / 2 - 14);
+    ctx.fillText(project.nombre, (w - 2 * mpg.ml) / 2, STAVE_TOP / 2 - 14);
   }
 
   // Nombre del track activo en la parte superior izquierda.
@@ -562,18 +606,21 @@ function drawPage(W, H){
   const EPS = 1e-6;
 
   const measures = buildMeasures();
-  const numSys = Math.max(1, Math.ceil(measures.length / MEASURES_PER_SYSTEM));
+  const numSys = Math.max(1, Math.ceil(measures.length / measuresPerSystem()));
   const prefixW = STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14;
 
   noteXPositions = {};
   noteYPositions = {};
 
+  const mps = measuresPerSystem();
+  const sysW = prefixW + mps * MEASURE_W;
+
   for(let s = 0; s < numSys; s++){
     const sysTop = STAVE_TOP + s * (STAVE_HEIGHT + SYST_GAP);
-    const measIn = measures.slice(s * MEASURES_PER_SYSTEM, (s + 1) * MEASURES_PER_SYSTEM);
+    const measIn = measures.slice(s * mps, (s + 1) * mps);
 
     // Dibuja el sistema (5 líneas), clave, armadura y métrica al inicio.
-    drawStaffSystem(prefixW + MEASURES_PER_SYSTEM * MEASURE_W, sysTop);
+    drawStaffSystem(sysW, sysTop);
     drawClefAndMeter(clef, project.compas, sysTop);
     drawKeySignature(project.tonalidad, sysTop);
 
@@ -611,6 +658,9 @@ function drawScroll(W, H){
   canvas.width = w * dpr;
   canvas.height = h * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  curScale = 1;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
 
   ctx.fillStyle = PAGE_COLOR;
   ctx.fillRect(0, 0, w, h);
@@ -888,8 +938,8 @@ function ensureCursorVisible(){
   }
   const pad = 40;
   const r = sc.getBoundingClientRect ? sc.getBoundingClientRect() : {left:0,top:0,width:sc.clientWidth||800,height:sc.clientHeight||600};
-  const cxScreen = cx + sc.scrollLeft - sc.offsetLeft;
-  const cyScreen = cy + sc.scrollTop - sc.offsetTop;
+  const cxScreen = cx * curScale + sc.scrollLeft - sc.offsetLeft;
+  const cyScreen = cy * curScale + sc.scrollTop - sc.offsetTop;
   if(cxScreen < pad) sc.scrollLeft += cxScreen - pad;
   else if(cxScreen > r.width - pad) sc.scrollLeft += cxScreen - (r.width - pad);
   if(cyScreen < pad) sc.scrollTop += cyScreen - pad;
