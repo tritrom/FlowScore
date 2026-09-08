@@ -305,14 +305,32 @@ function pageMargins(){
 
 function measuresPerSystem(){
   if(!useMobileLayout()) return MEASURES_PER_SYSTEM;
+  // En móvil se elige el nº de compases por sistema que mejor aprovecha la
+  // pantalla: el que maximiza la escala con la que la hoja cabe por completo.
   const m = pageMargins();
-  const avail = staffArea.clientWidth - m.ml - m.mr - STAFF_LEFT - 100 - keyCount(project.tonalidad) * 14 - 20;
-  return Math.max(1, Math.min(MEASURES_PER_SYSTEM, Math.floor(avail / MEASURE_W)));
+  const cw = staffArea.clientWidth || window.innerWidth;
+  const ch = staffArea.clientHeight || window.innerHeight;
+  const numMeas = buildMeasures().length;
+  const prefix = STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14;
+  let best = 1, bestScore = -1;
+  for(let k = 1; k <= MEASURES_PER_SYSTEM; k++){
+    const wWin = m.ml + prefix + k * MEASURE_W + m.mr;
+    const nSys = Math.max(1, Math.ceil(numMeas / k));
+    const hWin = m.mt + STAVE_TOP + nSys * STAVE_HEIGHT + (nSys - 1) * SYST_GAP + m.mb;
+    const score = Math.min(cw / wWin, ch / hWin);
+    if(score > bestScore){ bestScore = score; best = k; }
+  }
+  return best;
 }
 
-function fitScaleFor(w){
+// Ajuste de escala para que la hoja entera quepa en la pantalla móvil: se usa
+// la menor de las escalas (ancho y alto), de modo que se ve el 100% de la
+// partitura sin scroll. El navegador permite acercar (pinch) para detalles.
+function fitScaleFor(W, H){
   if(!useMobileLayout()) return 1;
-  return Math.min(1, staffArea.clientWidth / Math.max(1, w));
+  const cw = staffArea.clientWidth || window.innerWidth;
+  const ch = staffArea.clientHeight || window.innerHeight;
+  return Math.max(0.05, Math.min(1, cw / Math.max(1, W), ch / Math.max(1, H)));
 }
 
 function measureWidth(){
@@ -561,7 +579,7 @@ function drawPage(W, H){
 
   // En móvil se reduce el canvas por CSS para que quepa a lo ancho (sin perder
   // nitidez, porque la resolución interna queda intacta).
-  curScale = fitScaleFor(w);
+  curScale = fitScaleFor(w, h);
   canvas.style.width = Math.round(w * curScale) + 'px';
   canvas.style.height = Math.round(h * curScale) + 'px';
 
@@ -1303,11 +1321,12 @@ function vkAction(key){
 document.querySelectorAll('.vkbd-grid [data-key]').forEach(b=>{
   b.onclick = ()=> vkAction(b.dataset.key);
 });
-function vkShow(){ document.getElementById('vkbd').classList.add('show'); }
-function vkHide(){ document.getElementById('vkbd').classList.remove('show'); }
+function vkShow(){ document.getElementById('vkbd').classList.add('show'); resize(); }
+function vkHide(){ document.getElementById('vkbd').classList.remove('show'); resize(); }
 document.getElementById('vkHide').onclick = vkHide;
 document.getElementById('btnTeclado').onclick = ()=>{
   document.getElementById('vkbd').classList.toggle('show');
+  resize();
 };
 const vkMobile = window.matchMedia && (window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(max-width: 768px)').matches);
 if(vkMobile) vkShow();
