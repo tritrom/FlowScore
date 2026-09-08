@@ -19,10 +19,10 @@ body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;height:1
 .pent-area{flex:1;overflow:auto;position:relative;background:#1c1c1e}
 .panel{width:100%;max-height:38vh;background:#16213e;border-top:1px solid #0f3460;display:flex;flex-direction:column;flex-shrink:0}
 .panel h3{padding:10px 12px;font-size:.8rem;color:#888;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #0f3460}
-.panel-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0f3460}
+.panel-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0f3460;cursor:pointer;user-select:none;background:#0f3460}
 .panel-head h3{padding:10px 12px;font-size:.8rem;color:#888;text-transform:uppercase;letter-spacing:1px;border-bottom:none}
 .panel-toggle{background:none;border:none;color:#888;font-size:1rem;cursor:pointer;padding:0 14px}
-.panel-toggle:hover{color:#2ecc71}
+.panel-head:hover,.panel-toggle:hover{color:#fff}
 .panel.collapsed .track-list,.panel.collapsed .add-track{display:none}
 .panel.collapsed{max-height:none}
 .track-list{flex:1;overflow-y:auto;padding:6px}
@@ -72,7 +72,7 @@ canvas{display:block}
 <div class="main">
 <div class="pent-area"><canvas id="canvas"></canvas></div>
 <div class="panel">
-<div class="panel-head"><h3>Tracks</h3><button class="panel-toggle" id="panelToggle" title="Desplegar/ocultar">▾</button></div>
+<div class="panel-head" id="panelHead"><h3>Tracks</h3><button class="panel-toggle" id="panelToggle" title="Desplegar/ocultar">▾</button></div>
 <div class="track-list" id="trackList"></div>
 <div class="add-track" id="addTrack">+</div>
 </div>
@@ -1193,8 +1193,8 @@ document.getElementById('addTrack').onclick = ()=>{
   renderTrackList();
 };
 
-document.getElementById('panelToggle').onclick = ()=>{
-  const panel = document.getElementById('panelToggle').closest('.panel');
+document.getElementById('panelHead').onclick = ()=>{
+  const panel = document.getElementById('panelHead').closest('.panel');
   panel.classList.toggle('collapsed');
   document.getElementById('panelToggle').textContent = panel.classList.contains('collapsed') ? '▸' : '▾';
 };
