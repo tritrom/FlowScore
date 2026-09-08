@@ -265,6 +265,22 @@ function useMobileLayout(){
   return !!(staffArea && staffArea.clientWidth && staffArea.clientWidth < desktopContentW());
 }
 
+// Dimensiones VISIBLES reales del teléfono: al abrirse el teclado del sistema
+// (o la barra del navegador) la parte visible baja, y solo visualViewport lo
+// refleja. Usar la altura de layout dejaría la hoja tapada por el teclado.
+function viewArea(){
+  const vv = window.visualViewport;
+  const cw = Math.min(
+    (staffArea && staffArea.clientWidth) || window.innerWidth,
+    (vv && vv.width) || Infinity
+  );
+  const ch = Math.min(
+    (staffArea && staffArea.clientHeight) || window.innerHeight,
+    (vv && vv.height) || Infinity
+  );
+  return {cw: Math.max(1, cw), ch: Math.max(1, ch)};
+}
+
 function pageMargins(){
   if(!useMobileLayout()) return {ml:PAGE_ML, mr:PAGE_MR, mt:PAGE_MT, mb:PAGE_MB};
   return {ml:PAGE_ML_M, mr:PAGE_MR_M, mt:PAGE_MT_M, mb:PAGE_MB_M};
@@ -275,8 +291,7 @@ function measuresPerSystem(){
   // En móvil se elige el nº de compases por sistema que mejor aprovecha la
   // pantalla: el que maximiza la escala con la que la hoja cabe por completo.
   const m = pageMargins();
-  const cw = staffArea.clientWidth || window.innerWidth;
-  const ch = staffArea.clientHeight || window.innerHeight;
+  const va = viewArea();
   const numMeas = buildMeasures().length;
   const prefix = STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14;
   let best = 1, bestScore = -1;
@@ -284,7 +299,7 @@ function measuresPerSystem(){
     const wWin = m.ml + prefix + k * MEASURE_W + m.mr;
     const nSys = Math.max(1, Math.ceil(numMeas / k));
     const hWin = m.mt + STAVE_TOP + nSys * STAVE_HEIGHT + (nSys - 1) * SYST_GAP + m.mb;
-    const score = Math.min(cw / wWin, ch / hWin);
+    const score = Math.min(va.cw / wWin, va.ch / hWin);
     if(score > bestScore){ bestScore = score; best = k; }
   }
   return best;
@@ -295,9 +310,8 @@ function measuresPerSystem(){
 // partitura sin scroll. El navegador permite acercar (pinch) para detalles.
 function fitScaleFor(W, H){
   if(!useMobileLayout()) return 1;
-  const cw = staffArea.clientWidth || window.innerWidth;
-  const ch = staffArea.clientHeight || window.innerHeight;
-  return Math.max(0.05, Math.min(1, cw / Math.max(1, W), ch / Math.max(1, H)));
+  const va = viewArea();
+  return Math.max(0.05, Math.min(1, va.cw / Math.max(1, W), va.ch / Math.max(1, H)));
 }
 
 function measureWidth(){
@@ -1296,6 +1310,19 @@ document.getElementById('btnAyuda').onclick = ()=> document.getElementById('help
 document.getElementById('projTitle').textContent = project.nombre;
 
 window.addEventListener('resize', resize);
+
+// En iOS el teclado nativo no cambia innerHeight: solo visualViewport se
+// encoge/crece. Aquí se vuelve a encajar la hoja al abrir/cerrar el teclado.
+if(window.visualViewport){
+  let vvQueued = false;
+  const vvRepaint = () => {
+    if(vvQueued) return;
+    vvQueued = true;
+    requestAnimationFrame(() => { vvQueued = false; resize(); });
+  };
+  window.visualViewport.addEventListener('resize', vvRepaint);
+  window.visualViewport.addEventListener('scroll', vvRepaint);
+}
 resize();
 renderTrackList();
 
