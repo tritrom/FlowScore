@@ -1148,50 +1148,33 @@ function playNote(midi){
   }
 }
 
+// ---- Navigation helpers (shared by keyboard & virtual keyboard) ----
+function navUp(){ cursorStaffPos = Math.max(-4, cursorStaffPos - 1); octave = Math.floor(posToMidi(cursorStaffPos) / 12) - 1; draw(); ensureCursorVisible(); }
+function navDown(){ cursorStaffPos = Math.min(14, cursorStaffPos + 1); octave = Math.floor(posToMidi(cursorStaffPos) / 12) - 1; draw(); ensureCursorVisible(); }
+function navLeft(){ cursorPos = Math.max(0, cursorPos - 1); draw(); ensureCursorVisible(); }
+function navRight(){ cursorPos++; draw(); ensureCursorVisible(); }
+
 // Keyboard controls
 document.addEventListener('keydown', e => {
+  if(!e.key) return;
   const k = e.key.toLowerCase();
   const arrow = e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight';
 
-  // Arrow keys map to O (up), L (down), K (left), Ñ (right)
-  const nav = arrow ? {
-    ArrowUp: 'o',
-    ArrowDown: 'l',
-    ArrowLeft: 'k',
-    ArrowRight: 'ñ'
-  }[e.key] : k;
+  const nav = arrow ? { ArrowUp: 'o', ArrowDown: 'l', ArrowLeft: 'k', ArrowRight: 'ñ' }[e.key] : k;
 
-  if(nav==='o'){
-    // Up: move cursor up one step (line or space)
-    if(arrow) e.preventDefault();
-    cursorStaffPos = Math.max(-4, cursorStaffPos - 1);
-    octave = Math.floor(posToMidi(cursorStaffPos) / 12) - 1;
-    draw(); ensureCursorVisible();
-  }
-  else if(nav==='l'){
-    // Down: move cursor down one step (line or space)
-    if(arrow) e.preventDefault();
-    cursorStaffPos = Math.min(14, cursorStaffPos + 1);
-    octave = Math.floor(posToMidi(cursorStaffPos) / 12) - 1;
-    draw(); ensureCursorVisible();
-  }
-  else if(nav==='k'){cursorPos = Math.max(0, cursorPos-1); if(arrow) e.preventDefault(); draw(); ensureCursorVisible();}
-  else if(nav==='ñ'){cursorPos++; if(arrow) e.preventDefault(); draw(); ensureCursorVisible();}
-  else if(k==='p'){
-    // Scroll view to the right
-    staffArea.scrollBy({left: 200, behavior: 'smooth'});
-  }
-  else if(k==='i'){
-    // Scroll view to the left
-    staffArea.scrollBy({left: -200, behavior: 'smooth'});
-  }
-  else if(k>='1'&&k<='7'){addNote(parseInt(k)); playNote(Math.max(0, Math.min(127, posToMidi(cursorStaffPos) + accidental)));}
-  else if(k==='r'){makeRest();}
-  else if(k==='h'){toggleBeamOverride();}
-  else if(k==='+'||k==='='){accidental=1; draw();}
-  else if(k==='-'){accidental=-1; draw();}
-  else if(k==='0'){accidental=0; draw();}
-  else if(k==='backspace'||k==='delete'){e.preventDefault(); deleteNote();}
+  if(nav==='o'){ if(arrow) e.preventDefault(); navUp(); }
+  else if(nav==='l'){ if(arrow) e.preventDefault(); navDown(); }
+  else if(nav==='k'){ if(arrow) e.preventDefault(); navLeft(); }
+  else if(nav==='ñ'){ if(arrow) e.preventDefault(); navRight(); }
+  else if(k==='p'){ staffArea.scrollBy({left: 200, behavior: 'smooth'}); }
+  else if(k==='i'){ staffArea.scrollBy({left: -200, behavior: 'smooth'}); }
+  else if(k>='1'&&k<='7'){ addNote(parseInt(k)); playNote(Math.max(0, Math.min(127, posToMidi(cursorStaffPos) + accidental))); }
+  else if(k==='r'){ makeRest(); }
+  else if(k==='h'){ toggleBeamOverride(); }
+  else if(k==='+'||k==='='){ accidental=1; draw(); }
+  else if(k==='-'){ accidental=-1; draw(); }
+  else if(k==='0'){ accidental=0; draw(); }
+  else if(k==='backspace'||k==='delete'){ e.preventDefault(); deleteNote(); }
 });
 
 function setViewMode(mode){
@@ -1252,9 +1235,23 @@ function togglePanel(){
 document.getElementById('panelHead').onclick = togglePanel;
 document.getElementById('btnTracks').onclick = togglePanel;
 
-function vkSend(key){ document.dispatchEvent(new KeyboardEvent('keydown', {key: key, bubbles: true})); }
+function vkAction(key){
+  if(key==='o') navUp();
+  else if(key==='l') navDown();
+  else if(key==='k') navLeft();
+  else if(key==='ñ') navRight();
+  else if(key==='p') staffArea.scrollBy({left:200,behavior:'smooth'});
+  else if(key==='i') staffArea.scrollBy({left:-200,behavior:'smooth'});
+  else if(key>='1'&&key<='7'){addNote(parseInt(key));playNote(Math.max(0,Math.min(127,posToMidi(cursorStaffPos)+accidental)));}
+  else if(key==='r') makeRest();
+  else if(key==='h') toggleBeamOverride();
+  else if(key==='+'||key==='='){accidental=1;draw();}
+  else if(key==='-'){accidental=-1;draw();}
+  else if(key==='0'){accidental=0;draw();}
+  else if(key==='backspace'||key==='delete') deleteNote();
+}
 document.querySelectorAll('.vkbd-grid [data-key]').forEach(b=>{
-  b.onclick = ()=> vkSend(b.dataset.key);
+  b.onclick = ()=> vkAction(b.dataset.key);
 });
 function vkShow(){ document.getElementById('vkbd').classList.add('show'); }
 function vkHide(){ document.getElementById('vkbd').classList.remove('show'); }
