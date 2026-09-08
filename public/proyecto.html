@@ -37,6 +37,8 @@ body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;height:1
 .add-track{margin:8px;padding:10px;border:2px dashed #333;border-radius:6px;text-align:center;color:#555;cursor:pointer;font-size:1.2rem}
 .add-track:hover{border-color:#2ecc71;color:#2ecc71}
 #hiddenInput{position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;border:none;padding:0;font-size:16px;pointer-events:none}
+.float-track-btn{display:none;position:fixed;top:6px;right:10px;z-index:15;background:#0f3460;color:#fff;border:1px solid #2ecc71;padding:8px 14px;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer}
+@media (max-width:767px){ .float-track-btn{display:block} }
 .info-bar{padding:6px 10px;background:#0f3460;font-size:.7rem;color:#aaa;display:flex;flex-wrap:wrap;gap:4px 16px;flex-shrink:0;border-top:1px solid #1a1a2e}
 .info-bar span{white-space:nowrap}
 canvas{display:block}
@@ -90,6 +92,7 @@ canvas{display:block}
 </div>
 
 <input id="hiddenInput" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-hidden="true">
+<button id="btnFloatTracks" class="float-track-btn">Tracks ▾</button>
 
 <div class="info-bar">
 <span id="infoKey">Clave: Sol</span>
@@ -1284,11 +1287,14 @@ document.getElementById('addTrack').onclick = ()=>{
 
 function togglePanel(){
   const panel = document.getElementById('panelHead').closest('.panel');
-  panel.classList.toggle('open');
-  document.getElementById('panelToggle').textContent = panel.classList.contains('open') ? '▾' : '▸';
+  const open = panel.classList.toggle('open');
+  document.getElementById('panelToggle').textContent = open ? '▾' : '▸';
+  const fb = document.getElementById('btnFloatTracks');
+  if(fb) fb.style.display = open ? 'none' : '';
 }
 document.getElementById('panelHead').onclick = togglePanel;
 document.getElementById('btnTracks').onclick = togglePanel;
+document.getElementById('btnFloatTracks').onclick = togglePanel;
 
 // ---- Teclado nativo del teléfono ----
 // Un campo de texto invisible captura las pulsaciones del teclado por defecto y
