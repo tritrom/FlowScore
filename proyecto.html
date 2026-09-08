@@ -547,6 +547,16 @@ function drawPage(W, H){
     ctx.fillText(project.nombre, (w - 2 * PAGE_ML) / 2, STAVE_TOP / 2 - 14);
   }
 
+  // Nombre del track activo en la parte superior izquierda.
+  ctx.save();
+  ctx.fillStyle = '#333';
+  ctx.font = 'bold 14px "Segoe UI", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  const curTrack = project.tracks[currentTrack] || project.tracks[0];
+  if(curTrack && curTrack.name) ctx.fillText(curTrack.name, STAFF_LEFT, STAVE_TOP / 2 - 14);
+  ctx.restore();
+
   clef = project.clave === 'sol' ? 'treble' : 'bass';
   const mBeats = measureBeats(project.compas);
   const EPS = 1e-6;
@@ -626,13 +636,13 @@ function drawScroll(W, H){
     drawClefAndMeter(clef, project.compas, sysTop);
     drawKeySignature(project.tonalidad, sysTop);
 
-    // Etiqueta del track a la izquierda del pentagrama.
+    // Etiqueta del track en la parte superior izquierda de su pentagrama.
     ctx.save();
     ctx.fillStyle = '#555';
     ctx.font = 'bold 11px "Segoe UI", sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(track.name, STAFF_LEFT, sysTop + 6);
+    ctx.fillText(track.name, STAFF_LEFT, sysTop - 6);
     ctx.restore();
 
     for(let mi = 0; mi < measures.length; mi++){
