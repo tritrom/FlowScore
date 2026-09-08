@@ -1,0 +1,11 @@
+[package]
+name = "tritrom/flowscores"
+version = "0.1.0"
+description = "FlowScore - editor de partituras"
+license = "MIT"
+
+[dependencies]
+"wasmer/static-web-server" = "1"
+
+[fs]
+public = "public"
