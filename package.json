@@ -1,0 +1,13 @@
+{
+  "name": "flowscores",
+  "private": true,
+  "version": "0.1.8",
+  "type": "module",
+  "scripts": {
+    "build": "node -e \"require('fs').rmSync('.webc/flowscores.webc',{force:true})\" && wasmer package build . --out .webc/flowscores.webc",
+    "serve": "wasmer run --net .webc/flowscores.webc",
+    "watch": "node watch.js",
+    "watch:deploy": "node watch.js --deploy",
+    "deploy": "wasmer deploy --non-interactive --no-wait"
+  }
+}
