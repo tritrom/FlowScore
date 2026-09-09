@@ -21,7 +21,7 @@ body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;height:1
 .topbar-btns{display:flex;gap:8px;flex-wrap:wrap;width:100%}
 .topbar-btns button{flex:1;padding:10px 8px;font-size:.85rem;font-weight:600}
 .main{display:flex;flex-direction:column;flex:1;overflow:hidden;position:relative}
-.pent-area{flex:1;overflow:auto;position:relative;background:#1c1c1e}
+.pent-area{flex:1;overflow:auto;position:relative;background:#1c1c1e;display:flex}
 .panel{position:absolute;top:0;right:0;bottom:0;width:min(240px,85vw);background:#16213e;border-left:1px solid #0f3460;display:flex;flex-direction:column;z-index:11;transform:translateX(100%);transition:transform .25s;box-shadow:-4px 0 14px rgba(0,0,0,.5)}
 .panel.open{transform:translateX(0)}
 .panel h3{padding:10px 12px;font-size:.8rem;color:#888;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #0f3460}
@@ -41,7 +41,7 @@ body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;height:1
 @media (max-width:767px){ .float-track-btn{display:block} }
 .info-bar{padding:6px 10px;background:#0f3460;font-size:.7rem;color:#aaa;display:flex;flex-wrap:wrap;gap:4px 16px;flex-shrink:0;border-top:1px solid #1a1a2e}
 .info-bar span{white-space:nowrap}
-canvas{display:block}
+canvas{display:block;margin:auto}
 #modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);justify-content:center;align-items:flex-end;z-index:10}
 #modal.show{display:flex}
 .modal-box{background:#16213e;border:1px solid #0f3460;border-radius:14px 14px 0 0;padding:24px;width:100%;max-width:100%}
@@ -323,6 +323,24 @@ function fitScaleFor(W, H){
   return Math.max(0.05, Math.min(1, va.cw / Math.max(1, W), va.ch / Math.max(1, H)));
 }
 
+// Centra la hoja dentro del área de scroll. En Chrome (y otros navegadores) el
+// `margin:auto` con un contenedor con overflow NO centra el eje vertical, así
+// que aquí se aplica verticalmente por JS: cuando la hoja cabe de alto se usa el
+// margen sobrante repartido; cuando es más alta que la zona visible deja el
+// margen en 0 para que el scroll arranque desde arriba y nada quede tapado.
+// En móvil se conserva el margen "auto" (la hoja se ajusta al área visible del
+// visualViewport, no al alto total del contenedor).
+function centerCanvas(){
+  if(useMobileLayout()){
+    canvas.style.marginTop = 'auto';
+    return;
+  }
+  const va = viewArea();
+  const cssH = canvas.style.height ? parseFloat(canvas.style.height) : 0;
+  const spare = va.ch - cssH;
+  canvas.style.marginTop = spare > 0 ? Math.round(spare / 2) + 'px' : '0px';
+}
+
 function measureWidth(){
   if(viewMode === 'scroll'){
     // Ancho según el track con más compases (scroll muestra todos los tracks).
@@ -572,6 +590,7 @@ function drawPage(W, H){
   curScale = fitScaleFor(w, h);
   canvas.style.width = Math.round(w * curScale) + 'px';
   canvas.style.height = Math.round(h * curScale) + 'px';
+  centerCanvas();
 
   // Fondo del "escritorio" + hoja de partitura (blanca) con sombra.
   ctx.fillStyle = PAGE_COLOR;
@@ -669,6 +688,7 @@ function drawScroll(W, H){
   curScale = 1;
   canvas.style.width = w + 'px';
   canvas.style.height = h + 'px';
+  centerCanvas();
 
   ctx.fillStyle = PAGE_COLOR;
   ctx.fillRect(0, 0, w, h);
@@ -1212,18 +1232,14 @@ function navDown(){ cursorStaffPos = Math.min(14, cursorStaffPos + 1); octave = 
 function navLeft(){ cursorPos = Math.max(0, cursorPos - 1); draw(); ensureCursorVisible(); }
 function navRight(){ cursorPos++; draw(); ensureCursorVisible(); }
 
-// Keyboard controls
-document.addEventListener('keydown', e => {
-  if(!e.key) return;
-  const k = e.key.toLowerCase();
-  const arrow = e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight';
-
-  const nav = arrow ? { ArrowUp: 'o', ArrowDown: 'l', ArrowLeft: 'k', ArrowRight: 'ñ' }[e.key] : k;
-
-  if(nav==='o'){ if(arrow) e.preventDefault(); navUp(); }
-  else if(nav==='l'){ if(arrow) e.preventDefault(); navDown(); }
-  else if(nav==='k'){ if(arrow) e.preventDefault(); navLeft(); }
-  else if(nav==='ñ'){ if(arrow) e.preventDefault(); navRight(); }
+// Enruta un único carácter (del teclado físico o del virtual del móvil) a su
+// acción. Lo usan tanto el manejador keydown como el input del campo oculto.
+function handleChar(ch){
+  const k = String(ch).toLowerCase();
+  if(k==='o'){ navUp(); }
+  else if(k==='l'){ navDown(); }
+  else if(k==='k'){ navLeft(); }
+  else if(k==='ñ'){ navRight(); }
   else if(k==='p'){ staffArea.scrollBy({left: 200, behavior: 'smooth'}); }
   else if(k==='i'){ staffArea.scrollBy({left: -200, behavior: 'smooth'}); }
   else if(k>='1'&&k<='7'){ addNote(parseInt(k)); playNote(Math.max(0, Math.min(127, posToMidi(cursorStaffPos) + accidental))); }
@@ -1232,7 +1248,26 @@ document.addEventListener('keydown', e => {
   else if(k==='+'||k==='='){ accidental=1; draw(); }
   else if(k==='-'){ accidental=-1; draw(); }
   else if(k==='0'){ accidental=0; draw(); }
-  else if(k==='backspace'||k==='delete'){ e.preventDefault(); deleteNote(); }
+}
+
+// Keyboard controls (teclado físico en escritorio y eventos del móvil).
+document.addEventListener('keydown', e => {
+  if(!e.key) return;
+  if(e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight'){
+    e.preventDefault();
+    if(e.key === 'ArrowUp') navUp();
+    else if(e.key === 'ArrowDown') navDown();
+    else if(e.key === 'ArrowLeft') navLeft();
+    else if(e.key === 'ArrowRight') navRight();
+    return;
+  }
+  if(e.key === 'Backspace' || e.key === 'Delete'){ e.preventDefault(); deleteNote(); return; }
+  // Un carácter imprimible: se consume aquí para que no entre en el input
+  // oculto del móvil (el campo queda limpio y no se acumula texto).
+  if(e.key.length === 1){
+    e.preventDefault();
+    handleChar(e.key);
+  }
 });
 
 function setViewMode(mode){
@@ -1298,7 +1333,7 @@ document.getElementById('btnFloatTracks').onclick = togglePanel;
 
 // ---- Teclado nativo del teléfono ----
 // Un campo de texto invisible captura las pulsaciones del teclado por defecto y
-// las enruta al mismo manejador de teclas de la app (números, k/o/l/ñ, r, h...).
+// las enruta a la misma lógica de la app (números, k/o/l/ñ, r, h...).
 const hiddenInput = document.getElementById('hiddenInput');
 function summonKeyboard(){
   try{ hiddenInput.focus(); }catch(err){}
@@ -1307,14 +1342,18 @@ function summonKeyboard(){
 document.getElementById('btnTeclado').onclick = summonKeyboard;
 // iOS no abre el teclado salvo tras un gesto del usuario: el primer toque
 // (en cualquier parte) enfoca el input y convoca el teclado del sistema.
-document.addEventListener('pointerdown', ()=>{
-  setTimeout(summonKeyboard, 0);
-}, {once:true});
-staffArea.addEventListener('pointerdown', ()=> setTimeout(summonKeyboard, 0));
-// Evita que los caracteres se acumulen en el input invisible.
-hiddenInput.addEventListener('input', ()=>{ hiddenInput.value = ''; });
-document.addEventListener('keydown', e => {
-  if(e.target === hiddenInput && hiddenInput.value) setTimeout(()=>{ hiddenInput.value = ''; }, 0);
+// Se llama de forma SÍNCRONA dentro del gesto (setTimeout rompe el gesto en iOS).
+document.addEventListener('pointerdown', summonKeyboard, {once:true});
+staffArea.addEventListener('pointerdown', summonKeyboard);
+// Si el navegador no dispara keydown con el carácter (algunos teclados virtuales
+// de Android/iOS con IME), el texto insertado se recibe por `input`: se toma el
+// último carácter, se enruta a handleChar y se limpia el campo. Con el keydown
+// ya se hace preventDefault (el carácter nunca entra), así que aquí no hay doble.
+hiddenInput.addEventListener('input', ()=>{
+  const v = hiddenInput.value;
+  const last = v ? v.slice(-1) : '';
+  if(last) handleChar(last);
+  hiddenInput.value = '';
 });
 
 document.getElementById('btnAyuda').onclick = ()=> document.getElementById('helpBox').classList.toggle('show');
