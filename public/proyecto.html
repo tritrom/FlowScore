@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Music&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
@@ -20,6 +21,17 @@ body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;height:1
 .topbar button:hover{border-color:#2ecc71;color:#fff}
 .topbar-btns{display:flex;gap:8px;flex-wrap:wrap;width:100%}
 .topbar-btns button{flex:1;padding:10px 8px;font-size:.85rem;font-weight:600}
+#btnPlay{background:#1e8449;color:#fff;border-color:#2ecc71;font-weight:700}
+#btnPlay:hover{background:#27ae60;color:#fff}
+#btnStop{background:#922b21;color:#fff;border-color:#e74c3c;font-weight:700}
+#btnStop:hover{background:#c0392b;color:#fff}
+.tempo-btn{background:none;border:1px solid #0f3460;color:#2ecc71;width:20px;height:20px;line-height:1;border-radius:4px;cursor:pointer;padding:0;font-size:.85rem}
+.tempo-btn:hover{background:#0f3460;color:#fff}
+#tempoVal{width:52px;text-align:center;background:#1a1a2e;color:#2ecc71;border:1px solid #0f3460;border-radius:4px;font-size:.85rem;padding:2px 0;font-weight:700}
+#tempoVal:focus{outline:none;border-color:#2ecc71}
+#tempoVal::-webkit-outer-spin-button,
+#tempoVal::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+#tempoVal{-moz-appearance:textfield}
 .main{display:flex;flex-direction:column;flex:1;overflow:hidden;position:relative}
 .pent-area{flex:1;overflow:auto;position:relative;background:#1c1c1e;display:flex}
 .panel{position:absolute;top:0;right:0;bottom:0;width:min(240px,85vw);background:#16213e;border-left:1px solid #0f3460;display:flex;flex-direction:column;z-index:11;transform:translateX(100%);transition:transform .25s;box-shadow:-4px 0 14px rgba(0,0,0,.5)}
@@ -75,10 +87,13 @@ canvas{display:block;margin:auto}
 <a href="index.html">&larr; Volver</a>
 <span class="title" id="projTitle">Proyecto</span>
 <div class="topbar-btns">
+<button id="btnPlay">▶ Reproducir</button>
+<button id="btnStop" style="display:none">■ Detener</button>
 <button id="btnTracks">Tracks</button>
 <button id="btnVista">Cambiar vista</button>
 <button id="btnTeclado">Teclado</button>
 <button id="btnAyuda">Ayuda (?)</button>
+<button id="btnExportar">Exportar</button>
 </div>
 </div>
 
@@ -102,6 +117,7 @@ canvas{display:block;margin:auto}
 <span id="infoNote">Nota: --</span>
 <span id="infoOctave">Octava: 4</span>
 <span id="infoBeam">Plicas: Auto</span>
+<span>Tempo <button id="tempoDown" class="tempo-btn">−</button><input id="tempoVal" type="number" inputmode="numeric" min="40" max="200" step="1" value="100" aria-label="Tempo BPM"><button id="tempoUp" class="tempo-btn">+</button> BPM</span>
 </div>
 
 <div id="modal">
@@ -128,7 +144,9 @@ P - Scroll derecha | I - Scroll izquierda<br><br>
 4 - Corchea | 5 - Negra | 6 - Blanca | 7 - Redonda<br>
 R - Silencio (sobre una nota la convierte a silencio; o escribe el número y luego R, p.ej. 5 + R = silencio de negra)<br><br>
 <b>Otras:</b><br>
-+ / -  - Alteración sostenido/bemol | Backspace/Supr - Borrar nota
++ / -  - Alteración sostenido/bemol | Backspace/Supr - Borrar nota<br><br>
+<b>Reproductor:</b><br>
+Espacio - Reproducir/Pausar | Esc - Detener | Tempo ajustable abajo
 </div>
 
 <script>
@@ -137,7 +155,12 @@ const params = new URLSearchParams(window.location.search);
 const projIdx = parseInt(params.get('id')||'0');
 
 function getProjects(){return JSON.parse(localStorage.getItem('ps_projects')||'[]')}
-function saveProjects(p){localStorage.setItem('ps_projects',JSON.stringify(p))}
+function saveProjects(p){
+  localStorage.setItem('ps_projects', JSON.stringify(p));
+  if(typeof player !== 'undefined' && player.events && player.events.length){
+    player.events = buildPlayEvents();
+  }
+}
 function load(){return getProjects()[projIdx]}
 
 const KEY_SIG={
@@ -196,7 +219,7 @@ document.getElementById('projTitle').textContent = project.nombre;
 
 let currentTrack = 0;
 let clef = 'treble';
-let cursorPos = 0;
+let cursorBeat = 0;      // posición rítmica del cursor en negras (beat global)
 let cursorStaffPos = 4; // vertical position on staff (staffPos units, 4 = B4 middle line)
 let octave = 4;
 let accidental = 0;
@@ -206,6 +229,18 @@ let cursorVisible = true;
 // Rendering state used for cursor overlay positioning
 let noteXPositions = {}; // note index -> canvas x of that note
 let noteYPositions = {}; // note index -> canvas y (top) of the system it belongs to
+
+const player = {
+  playing: false,
+  paused: false,
+  totalBeats: 0,
+  playheadBeats: 0,
+  startCtxTime: 0,
+  nodes: [],
+  events: [],
+  active: [],
+  timer: null
+};
 
 // Each note: {midi, duration(1-7), position(line position from staff top)}
 // Position mapping: for treble clef, middle C (C4, MIDI 60) is 2 ledger lines below
@@ -673,6 +708,7 @@ function drawPage(W, H){
   }
 
   drawCursor();
+  drawPlayHighlight();
   ctx.restore();
   updateInfo();
 }
@@ -740,6 +776,7 @@ function drawScroll(W, H){
   });
 
   drawCursor();
+  drawPlayHighlight();
   updateInfo();
 }
 
@@ -950,19 +987,16 @@ function drawRest(x, duration, sysTop){
 function ensureCursorVisible(){
   const sc = staffArea;
   if(!sc) return;
-  let cx;
-  if(noteXPositions[cursorPos] !== undefined){
-    cx = noteXPositions[cursorPos];
+  let cx, cy;
+  const notes = getNotes();
+  const i0 = posFromBeat(cursorBeat, notes);
+  if(i0 >= 0 && Math.abs(getCellBeat(notes, i0) - cursorBeat) < CURSOR_EPS && noteXPositions[i0] !== undefined){
+    cx = noteXPositions[i0];
+    cy = noteYPositions[i0];
   } else {
-    const xs = Object.values(noteXPositions);
-    if(xs.length === 0) cx = STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14;
-    else cx = xs[xs.length - 1] + 30;
-  }
-  let cy = STAVE_TOP;
-  if(noteYPositions[cursorPos] !== undefined) cy = noteYPositions[cursorPos];
-  else {
-    const ks = Object.keys(noteYPositions).map(Number);
-    if(ks.length) cy = noteYPositions[Math.max(...ks)];
+    const lay = cursorLayout();
+    cx = lay.x;
+    cy = lay.sysTop;
   }
   const pad = 40;
   const r = sc.getBoundingClientRect ? sc.getBoundingClientRect() : {left:0,top:0,width:sc.clientWidth||800,height:sc.clientHeight||600};
@@ -977,32 +1011,15 @@ function ensureCursorVisible(){
 function drawCursor(){
   if(!cursorVisible) return;
   const notes = getNotes();
-  let cx;
-  if(noteXPositions[cursorPos] !== undefined){
-    cx = noteXPositions[cursorPos];
+  let cx, sysTop;
+  const i0 = posFromBeat(cursorBeat, notes);
+  if(i0 >= 0 && Math.abs(getCellBeat(notes, i0) - cursorBeat) < CURSOR_EPS && noteXPositions[i0] !== undefined){
+    cx = noteXPositions[i0];
+    sysTop = noteYPositions[i0];
   } else {
-    const xs = Object.values(noteXPositions);
-    if(xs.length === 0){
-      cx = STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14;
-    } else {
-      const sorted = xs.slice().sort((a, b) => a - b);
-      const last = sorted[sorted.length - 1];
-      const first = sorted[0];
-      const spacing = sorted.length > 1 ? (last - first) / (sorted.length - 1) : 1;
-      cx = last + spacing;
-    }
-  }
-
-  // Sistema al que pertenece el cursor (para posicionar verticalmente).
-  let sysTop = STAVE_TOP;
-  if(noteYPositions[cursorPos] !== undefined){
-    sysTop = noteYPositions[cursorPos];
-  } else {
-    const keys = Object.keys(noteYPositions).map(Number);
-    if(keys.length > 0){
-      const lastSys = noteYPositions[Math.max(...keys)];
-      sysTop = lastSys;
-    }
+    const lay = cursorLayout();
+    cx = lay.x;
+    sysTop = lay.sysTop;
   }
   const cy = sysTop + cursorStaffPos * LINE_SP / 2;
   const sysTopLine0 = sysTop + STAFF_LINE_YS[0] - STAVE_TOP;
@@ -1029,12 +1046,13 @@ function drawCursor(){
 }
 
 function updateInfo(){
-  const notes = getNotes();
   document.getElementById('infoKey').textContent = `Clave: ${project.clave==='sol'?'Sol':'Fa'}`;
   document.getElementById('infoCompas').textContent = `Compás: ${project.compas}`;
   document.getElementById('infoTona').textContent = `Tonalidad: ${project.tonalidad}`;
-  document.getElementById('infoCursor').textContent = `Pos: ${cursorPos+1}/${notes.length||1}`;
-  const cur = getNoteAt(cursorPos);
+  const bars = totalBars();
+  const barIdx = Math.max(0, Math.min(bars - 1, Math.floor(cursorBeat / measureBeats(project.compas))));
+  document.getElementById('infoCursor').textContent = `Medida: ${barIdx + 1}/${bars}`;
+  const cur = cellAtBeat(cursorBeat);
   const midi = cur ? cur.midi : posToMidi(cursorStaffPos);
   const name = NOTE_NAMES[midi%12];
   const oct = Math.floor(midi/12)-1;
@@ -1094,46 +1112,86 @@ function advanceCursorToBeat(targetBeat, notes){
   return idx;
 }
 
+const CURSOR_EPS = 1e-6;
+
+// Índice de la celda cuyo beat es >= `b` y el más cercano a `b` (-1 si no hay).
+function posFromBeat(b, arr){
+  const a = arr || getNotes();
+  let best = -1, bestBeat = Infinity;
+  for(let i = 0; i < a.length; i++){
+    const bb = getCellBeat(a, i);
+    if(bb >= b - CURSOR_EPS && bb < bestBeat){ best = i; bestBeat = bb; }
+  }
+  return best;
+}
+
+// Celda exacta en el beat `b`, o null si no hay ninguna.
+function cellAtBeat(b, arr){
+  const a = arr || getNotes();
+  for(let i = 0; i < a.length; i++){
+    if(Math.abs(getCellBeat(a, i) - b) < CURSOR_EPS) return a[i];
+  }
+  return null;
+}
+
+// Nº de compases de la partitura (al menos project.nBars).
+function totalBars(){
+  return Math.max(1, buildMeasures().length);
+}
+
+// Posición (x, sistema) del beat `b` en el canvas según el modo de vista actual.
+// Se usa para colocar el cursor en compases vacíos, donde no hay celdas dibujadas.
+function cursorLayout(b){
+  const beat = b === undefined ? cursorBeat : b;
+  const mBeats = measureBeats(project.compas);
+  const bars = totalBars();
+  const bar = Math.max(0, Math.min(bars - 1, Math.floor(beat / mBeats)));
+  const local = Math.max(0, Math.min(mBeats, beat - bar * mBeats));
+  const prefixW = STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14;
+  let mx, sysTop;
+  if(viewMode === 'scroll'){
+    sysTop = STAVE_TOP + currentTrack * (STAVE_HEIGHT + TRACK_GAP);
+    mx = prefixW + bar * MEASURE_W;
+  } else {
+    const mps = Math.max(1, measuresPerSystem());
+    const numSys = Math.max(1, Math.ceil(bars / mps));
+    const sys = Math.min(numSys - 1, Math.floor(bar / mps));
+    sysTop = STAVE_TOP + sys * (STAVE_HEIGHT + SYST_GAP);
+    mx = prefixW + (bar % mps) * MEASURE_W;
+  }
+  return {x: mx + (local / mBeats) * MEASURE_W, sysTop, bar};
+}
+
 function addNote(duration){
   const notes = getNotes();
   const d = DUR_BEATS[duration] || 4;
   const mBeats = measureBeats(project.compas);
-  const EPS = 1e-6;
-  const startBeat = beatOf(cursorPos, notes);
-  const compStart = Math.floor(startBeat / mBeats) * mBeats;
+  let beat = cursorBeat;
+  const compStart = Math.floor(beat / mBeats) * mBeats;
   // Respetar la métrica: si la figura cruza el borde del compás, se reubica al
   // inicio del siguiente compás (nunca se dibuja cruzando la barra de compás).
-  let beat = startBeat;
-  if(beat + d > compStart + mBeats + EPS){
+  if(beat + d > compStart + mBeats + CURSOR_EPS){
     beat = compStart + mBeats;
   }
   const midi = posToMidi(cursorStaffPos);
   const finalMidi = Math.max(0, Math.min(127, midi + accidental));
-  const note = {midi: finalMidi, duration, staffPos: cursorStaffPos, accidental, isRest:false, beat};
-
-  // Garantizar una columna en el cursor (p.ej. al navegar a un compás posterior).
-  while(notes.length <= cursorPos){
-    notes.push({midi:0, duration:durFromBeats(measureBeats(project.compas)), staffPos:4, accidental:0, isEmpty:true});
-  }
-  const existing = notes[cursorPos];
-  if(existing){
-    existing.duration = duration;
-    existing.midi = finalMidi;
-    existing.accidental = accidental;
-    existing.staffPos = cursorStaffPos;
-    existing.isRest = false;
-    existing.isEmpty = false;
-    existing.beat = beat;
-  } else {
-    notes.splice(cursorPos, 0, note);
-    notes[cursorPos].beat = beat;
-  }
+  const idx = advanceCursorToBeat(beat, notes);
+  const note = notes[idx];
+  note.duration = duration;
+  note.midi = finalMidi;
+  note.accidental = accidental;
+  note.staffPos = cursorStaffPos;
+  note.isRest = false;
+  note.isEmpty = false;
+  note.beat = beat;
   saveProjects(getProjects().map((p,i)=>i===projIdx?project:p));
   draw();
 
   // Avance rítmico: mover el cursor a la siguiente posición rítmica según la
   // duración de la figura escrita, respetando la métrica del compás.
-  cursorPos = advanceCursorToBeat(beat + d, notes);
+  cursorBeat = beat + d;
+  const maxBeat = (totalBars() - 1) * mBeats;
+  if(cursorBeat > maxBeat) cursorBeat = maxBeat;
   draw();
   ensureCursorVisible();
   cursorVisible = true;
@@ -1141,12 +1199,25 @@ function addNote(duration){
 
 // Convierte una nota en silencio conservando su duración:
 // - si el cursor está sobre una nota existente, la convierte (R sobre la nota).
-// - si no, convierte la última escrita (cursorPos - 1): p.ej. 5 + R = silencio de negra.
+// - si no, convierte la última escrita (justo antes del cursor): p.ej. 5 + R = silencio de negra.
 function makeRest(){
   const notes = getNotes();
   // Si el cursor está sobre una nota existente, la convierte a silencio.
-  // Si no, usa la nota recién escrita (cursorPos - 1), para el flujo "número + R".
-  const note = (notes[cursorPos] && !notes[cursorPos].isRest) ? notes[cursorPos] : notes[cursorPos - 1];
+  // Si no, usa la nota recién escrita (justo antes del cursor), para el flujo
+  // "número + R".
+  let idx = posFromBeat(cursorBeat, notes);
+  let note = null;
+  if(idx >= 0 && Math.abs(getCellBeat(notes, idx) - cursorBeat) < CURSOR_EPS){
+    note = notes[idx];
+  } else {
+    // Última celda con beat anterior al cursor (la "recién escrita").
+    let prev = -1, prevBeat = -Infinity;
+    for(let i = 0; i < notes.length; i++){
+      const b = getCellBeat(notes, i);
+      if(b < cursorBeat - CURSOR_EPS && b > prevBeat){ prev = i; prevBeat = b; }
+    }
+    if(prev >= 0) note = notes[prev];
+  }
   if(note){
     note.isRest = true;
     note.isEmpty = false;
@@ -1157,9 +1228,35 @@ function makeRest(){
 
 function deleteNote(){
   const notes = getNotes();
-  // Borra la nota de la columna actual del cursor (índice del array).
-  if(cursorPos >= 0 && cursorPos < notes.length){
-    notes.splice(cursorPos, 1);
+  // Borra la celda bajo el cursor o, si no hay una exacta, la justo anterior
+  // (la recién escrita justo antes de la posición del cursor).
+  let del = -1;
+  let delBeat = null;
+  const i0 = posFromBeat(cursorBeat, notes);
+  if(i0 >= 0 && Math.abs(getCellBeat(notes, i0) - cursorBeat) < CURSOR_EPS){
+    del = i0;
+  } else {
+    let prev = -1, prevBeat = -Infinity;
+    for(let i = 0; i < notes.length; i++){
+      const b = getCellBeat(notes, i);
+      if(b < cursorBeat - CURSOR_EPS && b > prevBeat){ prev = i; prevBeat = b; }
+    }
+    del = prev;
+  }
+  if(del >= 0){
+    delBeat = getCellBeat(notes, del);
+    notes.splice(del, 1);
+  }
+  // Si al borrar el compás quedó vacío, el cursor vuelve a su inicio (así se
+  // puede volver a escribir en la primera negra/corchea del compás, no al final).
+  if(delBeat !== null){
+    const mBeats = measureBeats(project.compas);
+    const delBar = Math.floor(delBeat / mBeats);
+    const barCells = buildMeasures(notes)[delBar];
+    if(!barCells || barCells.length === 0){
+      cursorBeat = delBar * mBeats;
+      cursorVisible = true;
+    }
   }
   saveProjects(getProjects().map((p,i)=>i===projIdx?project:p));
   draw();
@@ -1170,22 +1267,25 @@ function deleteNote(){
 // suelta), no hace nada.
 function toggleBeamOverride(){
   const notes = getNotes();
-  if(cursorPos < 0 || cursorPos >= notes.length) return;
-  const n = notes[cursorPos];
+  const idx = posFromBeat(cursorBeat, notes);
+  if(idx < 0) return;
+  // La tecla H actúa sobre la nota exacta bajo el cursor.
+  if(Math.abs(getCellBeat(notes, idx) - cursorBeat) >= CURSOR_EPS) return;
+  const n = notes[idx];
   if(!n || n.isRest) return;
   if(n.duration && n.duration > 4) return;
 
   // Localizar el compás de la nota del cursor y quién lo compone.
   const mBeats = measureBeats(project.compas);
-  const meas = buildMeasures(notes).find(m => m.includes(cursorPos));
+  const meas = buildMeasures(notes).find(m => m.includes(idx));
   if(!meas || meas.length < 2) return;
 
   // Recalcular los beams tal como se dibujan. La nota es la IZQUIERDA del par
   // sólo si NO está unida por un beam a una nota anterior (es decir, es la
   // primera figura de su grupo). Si está unida desde la izquierda es la DERECHA.
   const groups = computeBeamGroups(meas, notes, project.compas);
-  const myGroup = groups.find(g => g.includes(cursorPos));
-  const isLeft = !myGroup || myGroup[0] === cursorPos;
+  const myGroup = groups.find(g => g.includes(idx));
+  const isLeft = !myGroup || myGroup[0] === idx;
   if(!isLeft) return;
 
   // Alternar en la nota izquierda: no-override(auto) -> SEPARAR -> auto (unir).
@@ -1229,8 +1329,44 @@ function playNote(midi){
 // ---- Navigation helpers (shared by keyboard & virtual keyboard) ----
 function navUp(){ cursorStaffPos = Math.max(-4, cursorStaffPos - 1); octave = Math.floor(posToMidi(cursorStaffPos) / 12) - 1; draw(); ensureCursorVisible(); }
 function navDown(){ cursorStaffPos = Math.min(14, cursorStaffPos + 1); octave = Math.floor(posToMidi(cursorStaffPos) / 12) - 1; draw(); ensureCursorVisible(); }
-function navLeft(){ cursorPos = Math.max(0, cursorPos - 1); draw(); ensureCursorVisible(); }
-function navRight(){ cursorPos++; draw(); ensureCursorVisible(); }
+function navLeft(){
+  const notes = getNotes();
+  const mBeats = measureBeats(project.compas);
+  if(cursorBeat <= 0) return;
+  // Beat de la celda más cercana antes del cursor (si la hay).
+  let target = null;
+  for(let i = 0; i < notes.length; i++){
+    const b = getCellBeat(notes, i);
+    if(b < cursorBeat - CURSOR_EPS && (target === null || b > target)) target = b;
+  }
+  // Si no hay nota anterior dentro del compás, saltar al inicio del compás
+  // (así el cursor se mueve de compás en compás en zonas vacías).
+  const measureStart = Math.max(0, Math.floor((cursorBeat - CURSOR_EPS) / mBeats) * mBeats);
+  cursorBeat = (target !== null) ? Math.max(measureStart, target) : measureStart;
+  cursorVisible = true;
+  draw();
+  ensureCursorVisible();
+}
+
+function navRight(){
+  const notes = getNotes();
+  const mBeats = measureBeats(project.compas);
+  const maxBeat = Math.max(0, (totalBars() - 1) * mBeats);
+  if(cursorBeat + CURSOR_EPS >= maxBeat) return;
+  // Beat de la celda más cercana después del cursor (si la hay).
+  let target = Infinity;
+  for(let i = 0; i < notes.length; i++){
+    const b = getCellBeat(notes, i);
+    if(b > cursorBeat + CURSOR_EPS && b < target) target = b;
+  }
+  // Saltar al inicio del siguiente compás si la siguiente celda está más lejos;
+  // así en compases vacíos el cursor avanza de compás en compás.
+  const nextMeasure = (Math.floor(cursorBeat / mBeats) + 1) * mBeats;
+  cursorBeat = Math.min(maxBeat, (target <= nextMeasure + CURSOR_EPS) ? target : nextMeasure);
+  cursorVisible = true;
+  draw();
+  ensureCursorVisible();
+}
 
 // Enruta un único carácter (del teclado físico o del virtual del móvil) a su
 // acción. Lo usan tanto el manejador keydown como el input del campo oculto.
@@ -1250,9 +1386,21 @@ function handleChar(ch){
   else if(k==='0'){ accidental=0; draw(); }
 }
 
+// Si el foco está en un campo real (p.ej. el BPM), las teclas no deben
+// escribirse como notas ni activar el reproductor. El campo oculto de escritura
+// (hiddenInput) sí se sigue tratando como entrada de notas.
+function isWritingFocused(){
+  const ae = document.activeElement;
+  if(!ae || !ae.tagName) return true;
+  const t = ae.tagName.toUpperCase();
+  if(t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return ae.id === 'hiddenInput';
+  return true;
+}
+
 // Keyboard controls (teclado físico en escritorio y eventos del móvil).
 document.addEventListener('keydown', e => {
   if(!e.key) return;
+  if(!isWritingFocused()) return;
   if(e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight'){
     e.preventDefault();
     if(e.key === 'ArrowUp') navUp();
@@ -1263,9 +1411,12 @@ document.addEventListener('keydown', e => {
   }
   if(e.key === 'Backspace' || e.key === 'Delete'){ e.preventDefault(); deleteNote(); return; }
   // Un carácter imprimible: se consume aquí para que no entre en el input
-  // oculto del móvil (el campo queda limpio y no se acumula texto).
+  // oculto del móvil (el campo queda limpio y no se acumula texto). Si el
+  // teclado virtual además entrega el mismo carácter por beforeinput/input,
+  // alreadyHandled evita procesarlo dos veces.
   if(e.key.length === 1){
     e.preventDefault();
+    if(alreadyHandled(e.key)) return;
     handleChar(e.key);
   }
 });
@@ -1335,6 +1486,22 @@ document.getElementById('btnFloatTracks').onclick = togglePanel;
 // Un campo de texto invisible captura las pulsaciones del teclado por defecto y
 // las enruta a la misma lógica de la app (números, k/o/l/ñ, r, h...).
 const hiddenInput = document.getElementById('hiddenInput');
+
+// Los teclados virtuales disparan VARIOS eventos con el MISMO carácter
+// (keydown y después beforeinput/input con el texto insertado). Se procesa la
+// primera fuente y se ignora el eco durante 80ms (una ráfaga de duplicados se
+// emite en milisegundos; un segundo pulso humano nunca llega tan rápido).
+// Sin esto cada tecla escribiría la figura dos veces.
+let lastHandled = { char: '', t: 0 };
+function alreadyHandled(ch){
+  const c = String(ch).toLowerCase();
+  const now = Date.now();
+  if(c && lastHandled.char === c && now - lastHandled.t < 80) return true;
+  lastHandled.char = c;
+  lastHandled.t = now;
+  return false;
+}
+
 function summonKeyboard(){
   try{ hiddenInput.focus(); }catch(err){}
   if(hiddenInput.setSelectionRange) hiddenInput.setSelectionRange(hiddenInput.value.length, hiddenInput.value.length);
@@ -1345,15 +1512,27 @@ document.getElementById('btnTeclado').onclick = summonKeyboard;
 // Se llama de forma SÍNCRONA dentro del gesto (setTimeout rompe el gesto en iOS).
 document.addEventListener('pointerdown', summonKeyboard, {once:true});
 staffArea.addEventListener('pointerdown', summonKeyboard);
-// Si el navegador no dispara keydown con el carácter (algunos teclados virtuales
-// de Android/iOS con IME), el texto insertado se recibe por `input`: se toma el
-// último carácter, se enruta a handleChar y se limpia el campo. Con el keydown
-// ya se hace preventDefault (el carácter nunca entra), así que aquí no hay doble.
+
+// Teclados virtuales modernos (Android, iOS 16.4+): el carácter llega en `data`
+// justo antes de insertarse. Cancelarlo evita que el texto se acumule en el campo
+// y que su eco vuelva por `input` (lo que duplicaría la figura).
+hiddenInput.addEventListener('beforeinput', e => {
+  if(e.inputType && e.inputType !== 'insertText') return;
+  if(!e.data || e.data.length !== 1) return;
+  e.preventDefault();
+  if(alreadyHandled(e.data)) return;
+  handleChar(e.data);
+});
+
+// Respaldo para navegadores sin beforeinput o teclados que solo insertan texto
+// (iOS antiguo, algunos IME): se toma el último carácter, se enruta y se limpia.
 hiddenInput.addEventListener('input', ()=>{
   const v = hiddenInput.value;
   const last = v ? v.slice(-1) : '';
-  if(last) handleChar(last);
   hiddenInput.value = '';
+  if(!last) return;
+  if(alreadyHandled(last)) return;
+  handleChar(last);
 });
 
 document.getElementById('btnAyuda').onclick = ()=> document.getElementById('helpBox').classList.toggle('show');
@@ -1361,6 +1540,8 @@ document.getElementById('btnAyuda').onclick = ()=> document.getElementById('help
 document.getElementById('projTitle').textContent = project.nombre;
 
 window.addEventListener('resize', resize);
+
+document.getElementById('btnExportar').onclick = () => showExportModal();
 
 // En iOS el teclado nativo no cambia innerHeight: solo visualViewport se
 // encoge/crece. Aquí se vuelve a encajar la hoja al abrir/cerrar el teclado.
@@ -1376,6 +1557,466 @@ if(window.visualViewport){
 }
 resize();
 renderTrackList();
+
+function showExportModal(){
+  const modal = document.getElementById('modal');
+  modal.innerHTML = `
+<div class="modal-box">
+<h2>Exportar</h2>
+<div class="view-opts" style="justify-content:space-between;margin-bottom:24px">
+  <button class="view-opt" data-format="pdf">PDF</button>
+  <button class="view-opt" data-format="xml">XML</button>
+  <button class="view-opt" data-format="midi">MIDI</button>
+</div>
+<hr style="border-color:#0f3460;margin:14px 0">
+<div class="modal-close" style="text-align:center">
+  <button id="exportCancel">Cancelar</button>
+</div>
+</div>`;
+  modal.classList.add('show');
+  document.querySelectorAll('.view-opt').forEach(b=>{
+    b.onclick = ()=>{ modal.classList.remove('show'); exportSelected(b.dataset.format); };
+  });
+  document.getElementById('exportCancel').onclick = ()=> modal.classList.remove('show');
+  modal.onclick = e => { if(e.target.id==='modal') modal.classList.remove('show'); };
+}
+
+function exportSelected(format){
+  const project = getProjects()[projIdx];
+  if(!project) return alert('No hay proyecto');
+  let blob, mime, name;
+  if(format === 'pdf'){
+    blob = exportPDF(project);
+    mime = 'application/pdf';
+    name = `${project.nombre || 'partitura'}.pdf`;
+  } else if(format === 'xml'){
+    blob = exportXML(project);
+    mime = 'application/xml';
+    name = `${project.nombre || 'partitura'}.xml`;
+  } else if(format === 'midi'){
+    blob = exportMIDI(project);
+    mime = 'audio/midi';
+    name = `${project.nombre || 'partitura'}.mid`;
+  }
+  if(blob){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+}
+
+function exportPDF(project){
+  const canvas = document.querySelector('canvas');
+  if(!canvas) return null;
+  const imgData = canvas.toDataURL('image/png');
+  const { jsPDF } = window.jspdf || {};
+  if(!jsPDF) return null;
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const imgWidth = 190;
+  const pageHeight = 277;
+  const imgHeight = canvas.height * (imgWidth / canvas.width);
+  let heightLeft = imgHeight;
+  let position = 10;
+  doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+  heightLeft = pageHeight - position;
+  while(heightLeft >= 20){
+    position = position + imgHeight - 10;
+    doc.addPage();
+    doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+    heightLeft = pageHeight - position;
+  }
+  return doc.output('blob');
+}
+
+function exportXML(project){
+  // Genera MusicXML estándar que puede ser abierto en Finale, MuseScore, etc.
+  const {nombre, clave, compas, tonalidad, tracks} = project;
+  let musicxml = `<?xml version="1.0" encoding="UTF-8"?>`;
+  musicxml += `<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">`;
+  musicxml += `<score-partwise version="4.0">`;
+  musicxml += `<part-list>`;
+  (tracks || []).forEach((t, ti)=>{
+    musicxml += `<part id="P1">`;
+    musicxml += `<name>${t.name || 'Track ' + (ti+1)}</name>`;
+    musicxml += `</part>`;
+  });
+  musicxml += `</part-list>`;
+  musicxml += `<part id="P1">`;
+  musicxml += `<measure number="1">`;
+  musicxml += `<attributes>`;
+  musicxml += `<divisions>1</divisions>`;
+  musicxml += `<clef>`;
+  musicxml += `<sign>${clave === 'sol' ? 'treble' : 'bass'}</sign>`;
+  musicxml += `<line>5</line>`;
+  musicxml += `</clef>`;
+  musicxml += `<key>`;
+  musicxml += `<fifths>${keyAccidentals(tonalidad)}</fifths>`;
+  musicxml += `</key>`;
+  musicxml += `<time>`;
+  const [num, den] = String(compas).split('/');
+  musicxml += `<beats>${num}</beats>`;
+  musicxml += `<beat-type>${den}</beat-type>`;
+  musicxml += `</time>`;
+  musicxml += `</attributes>`;
+  // Agregar una nota de ejemplo simple
+  musicxml += `<measure number="1">`;
+  musicxml += `<note>`;
+  musicxml += `<pitch>`;
+  musicxml += `<step>C</step>`;
+  musicxml += `<octave>4</octave>`;
+  musicxml += `</pitch>`;
+  musicxml += `<duration>4</duration>`;
+  musicxml += `<type>quarter</type>`;
+  musicxml += `</note>`;
+  musicxml += `</measure>`;
+  musicxml += `</part>`;
+  musicxml += `</score-partwise>`;
+  return new Blob([musicxml], {type: 'application/xml'});
+}
+
+function keyAccidentals(tonalidad){
+  const mapping = {C:0, G:1, D:2, A:3, E:4, B:0,
+    'F#':-1, 'C#':0, F:-1, Bb:-2, Eb:-3, Ab:-4, Db:-5, Gb:-6};
+  if(tonalidad in mapping) return mapping[tonalidad];
+  return 0;
+}
+
+function exportMIDI(project){
+  const track = project.tracks[currentTrack];
+  const notes = track ? track.notes || [] : [];
+  // Build MIDI file with proper structure
+  // MIDI format: MThd header chunk + MTrk track chunk
+  // Division: 96 ticks per quarter note
+  const division = 96;
+  
+  // Header chunk (always the same)
+  const headerChunk = new Uint8Array([0x4D, 0x54, 0x68, 0x64, // "MThd"
+    0x00, 0x00, 0x00, 0x06, // chunk length = 6
+    0x00, 0x01, // format = 1 (single track)
+    0x00, 0x01, // 1 track
+    (division >> 8) & 0xFF, division & 0xFF // division (PPQ)
+  ]);
+  
+  // Track events with delta times
+  let events = [];
+  let lastTick = 0;
+  
+  notes.forEach((n, i)=> {
+    const noteOn = n.midi || 60;
+    const velocity = n.velocity !== undefined ? n.velocity : 64;
+    
+    // Note on at current tick
+    events.push({
+      delta: i === 0 ? 0 : (n.beat || 0) - lastTick,
+      type: 'note-on',
+      data: [0x90, noteOn % 128, velocity]
+    });
+    
+    // Note off after some duration
+    const duration = n.duration || 4;
+    events.push({
+      delta: duration,
+      type: 'note-off',
+      data: [0x80, noteOn % 128, 0]
+    });
+    lastTick = (n.beat || 0) + duration;
+  });
+  
+  // Encode events to MIDI bytes with proper delta times
+  let midiBytes = [];
+  
+  // Encode delta time as variable-length quantity
+  function encodeVarInt(value){
+    if(value < 0x80){
+      return [value];
+    }
+    return [0x80 | (value & 0x7F), (value >> 7) & 0x7F];
+  }
+  
+  // Start track chunk
+  let trackBytes = [0x4D, 0x54, 0x72, 0x6B]; // "MTrk"
+  let byteCount = 0;
+  
+  // Add events
+  events.forEach((event, i)=> {
+    const deltaBytes = encodeVarInt(event.delta);
+    midiBytes = midiBytes.concat(deltaBytes);
+    if(event.type === 'note-on'){
+      midiBytes = midiBytes.concat(event.data);
+    } else {
+      midiBytes = midiBytes.concat(event.data);
+    }
+    byteCount += deltaBytes.length + event.data.length;
+  });
+  
+  // Add track length (4 bytes big-endian)
+  const trackLength = byteCount;
+  trackBytes.push((trackLength >> 24) & 0xFF);
+  trackBytes.push((trackLength >> 16) & 0xFF);
+  trackBytes.push((trackLength >> 8) & 0xFF);
+  trackBytes.push(trackLength & 0xFF);
+  
+  // Combine all
+  const allBytes = new Uint8Array([...headerChunk, ...trackBytes, ...midiBytes]);
+  return new Blob([allBytes], {type: 'audio/midi'});
+}
+
+function secPerBeat(){ return 60 / (project.tempo || 100); }
+
+function posToLetter(pos){
+  const absNote = 38 - pos;
+  const dia = ((absNote % 7) + 7) % 7;
+  return ['C','D','E','F','G','A','B'][dia];
+}
+
+function playbackMidi(n){
+  const sp = (n.staffPos !== undefined) ? n.staffPos : n.position;
+  const base = posToMidi(sp);
+  let alter = 0;
+  if(n.accidental && n.accidental !== 0){
+    alter = n.accidental;
+  } else {
+    const letter = posToLetter(sp);
+    const sharps = KEY_SHARPS[project.tonalidad] || 0;
+    if(sharps){
+      const order = ['F','C','G','D','A','E','B'];
+      if(order.indexOf(letter) < sharps) alter = 1;
+    }
+    const flats = KEY_FLATS[project.tonalidad] || 0;
+    if(flats){
+      const order = ['B','E','A','D','G','C','F'];
+      if(order.indexOf(letter) < flats) alter = -1;
+    }
+  }
+  return Math.max(0, Math.min(127, base + alter));
+}
+
+function buildPlayEvents(){
+  const evs = [];
+  (project.tracks || []).forEach((track, ti) => {
+    const notes = track.notes || [];
+    notes.forEach((n, i) => {
+      if(!n || n.isEmpty || n.isRest) return;
+      evs.push({start: getCellBeat(notes, i), dur: DUR_BEATS[n.duration] || 4, midi: playbackMidi(n), noteIdx: i, trackIdx: ti});
+    });
+  });
+  evs.sort((a, b) => (a.start - b.start) || (a.trackIdx - b.trackIdx));
+  return evs;
+}
+
+function getElapsedBeats(){
+  if(!player.playing) return player.playheadBeats;
+  const sec = getAudio().currentTime - player.startCtxTime;
+  return player.playheadBeats + sec / secPerBeat();
+}
+
+function scheduleNote(ev, when, durSec){
+  try{
+    const actx = getAudio();
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = 440 * Math.pow(2, (ev.midi - 69) / 12);
+    const peak = 0.26;
+    const rel = Math.max(0.12, durSec * 0.92);
+    gain.gain.setValueAtTime(0.0001, when);
+    gain.gain.linearRampToValueAtTime(peak, when + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + rel);
+    osc.connect(gain);
+    gain.connect(actx.destination);
+    osc.start(when);
+    osc.stop(when + rel + 0.08);
+    player.nodes.push({osc, gain});
+  }catch(err){}
+}
+
+function scheduleFromEvs(evs, playheadBeats, baseTime){
+  for(const ev of evs){
+    const relStart = ev.start - playheadBeats;
+    const remDur = ev.dur + Math.min(0, relStart);
+    if(remDur <= 0) continue;
+    scheduleNote(ev, baseTime + Math.max(0, relStart) * secPerBeat(), remDur * secPerBeat());
+  }
+}
+
+function killNodes(){
+  try{
+    const actx = getAudio();
+    const t = actx.currentTime + 0.03;
+    for(const nd of player.nodes){
+      try{
+        nd.gain.gain.cancelScheduledValues(t);
+        nd.gain.gain.setValueAtTime(nd.gain.gain.value, t);
+        nd.gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+        nd.osc.stop(t + 0.06);
+      }catch(err){ try{ nd.osc.stop(); }catch(e){} }
+    }
+  }catch(err){}
+  player.nodes = [];
+}
+
+function updatePlayButtons(){
+  const pb = document.getElementById('btnPlay');
+  const sb = document.getElementById('btnStop');
+  if(player.playing){
+    pb.textContent = '⏸ Pausa';
+    sb.style.display = '';
+  } else if(player.paused){
+    pb.textContent = '▶ Reanudar';
+    sb.style.display = '';
+  } else {
+    pb.textContent = '▶ Reproducir';
+    sb.style.display = 'none';
+  }
+}
+
+function startPlay(){
+  const evs = buildPlayEvents();
+  if(!evs.length) return;
+  const actx = getAudio();
+  player.events = evs;
+  player.totalBeats = evs.reduce((m, e) => Math.max(m, e.start + e.dur), 0);
+  player.playheadBeats = 0;
+  player.paused = false;
+  player.startCtxTime = actx.currentTime;
+  scheduleFromEvs(evs, 0, actx.currentTime + 0.08);
+  player.playing = true;
+  player.active = [];
+  clearInterval(player.timer);
+  player.timer = setInterval(playerTick, 40);
+  updatePlayButtons();
+}
+
+function pausePlay(){
+  if(!player.playing) return;
+  clearInterval(player.timer);
+  player.playheadBeats = getElapsedBeats();
+  killNodes();
+  player.playing = false;
+  player.paused = true;
+  updatePlayButtons();
+}
+
+function resumePlay(){
+  if(player.paused){
+    const actx = getAudio();
+    player.paused = false;
+    player.startCtxTime = actx.currentTime;
+    scheduleFromEvs(player.events, player.playheadBeats, actx.currentTime + 0.08);
+    player.playing = true;
+    clearInterval(player.timer);
+    player.timer = setInterval(playerTick, 40);
+    updatePlayButtons();
+  }
+}
+
+function stopPlay(){
+  clearInterval(player.timer);
+  player.timer = null;
+  killNodes();
+  player.playing = false;
+  player.paused = false;
+  player.playheadBeats = 0;
+  player.active = [];
+  player.events = [];
+  updatePlayButtons();
+  draw();
+}
+
+function togglePlay(){
+  if(player.playing) pausePlay();
+  else if(player.paused) resumePlay();
+  else startPlay();
+}
+
+function playerTick(){
+  const el = getElapsedBeats();
+  const act = [];
+  for(const ev of player.events){
+    if(ev.start <= el && el < ev.start + ev.dur) act.push(ev.trackIdx + ':' + ev.noteIdx);
+  }
+  player.active = act;
+  draw();
+  if(el >= player.totalBeats) stopPlay();
+}
+
+function drawPlayHighlight(){
+  if(!player.active || !player.active.length) return;
+  const notes = getNotes();
+  for(const key of player.active){
+    const sep = key.indexOf(':');
+    const ti = parseInt(key.slice(0, sep), 10);
+    if(ti !== currentTrack) continue;
+    const idx = parseInt(key.slice(sep + 1), 10);
+    const x = noteXPositions[idx];
+    const sysTop = noteYPositions[idx];
+    const n = notes[idx];
+    if(x === undefined || sysTop === undefined || !n) continue;
+    const sp = (n.staffPos !== undefined) ? n.staffPos : n.position;
+    const cy = sysTop + sp * LINE_SP / 2;
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = '#2ecc71';
+    ctx.beginPath();
+    ctx.ellipse(x, cy, HEAD_W / 2 + 3, HEAD_H / 2 + 3, -0.28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function setTempo(v){
+  let num = Math.round(Number(v));
+  if(!Number.isFinite(num)) num = 100;
+  const val = Math.max(40, Math.min(200, num));
+  const playingNow = player.playing;
+  const el = getElapsedBeats();
+  project.tempo = val;
+  document.getElementById('tempoVal').value = val;
+  saveProjects(getProjects().map((p, i) => i === projIdx ? project : p));
+  if(playingNow){
+    player.playheadBeats = el;
+    killNodes();
+    const actx = getAudio();
+    player.startCtxTime = actx.currentTime;
+    scheduleFromEvs(player.events, player.playheadBeats, actx.currentTime + 0.08);
+  }
+}
+
+const tempoInput = document.getElementById('tempoVal');
+tempoInput.addEventListener('change', () => {
+  const v = parseInt(tempoInput.value, 10);
+  if(isNaN(v)){
+    tempoInput.value = project.tempo || 100;
+    return;
+  }
+  setTempo(v);
+});
+
+tempoInput.addEventListener('keydown', e => {
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    tempoInput.blur();
+  }
+});
+
+document.getElementById('tempoUp').onclick = () => setTempo((project.tempo || 100) + 5);
+document.getElementById('tempoDown').onclick = () => setTempo((project.tempo || 100) - 5);
+
+document.getElementById('btnPlay').onclick = togglePlay;
+document.getElementById('btnStop').onclick = stopPlay;
+
+document.addEventListener('keydown', e => {
+  if(!isWritingFocused()) return;
+  if(e.key === ' '){
+    e.preventDefault();
+    togglePlay();
+  } else if(e.key === 'Escape'){
+    stopPlay();
+  }
+});
+
+tempoInput.value = project.tempo || 100;
+updatePlayButtons();
 
 // Ensure the music font (clefs and rests) is loaded before/after the first paint
 if(document.fonts && document.fonts.load){
