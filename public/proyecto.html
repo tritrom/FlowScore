@@ -51,6 +51,25 @@ body{font-family:'Segoe UI',sans-serif;background:#1a1a2e;color:#e0e0e0;height:1
 #hiddenInput{position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;border:none;padding:0;font-size:16px;pointer-events:none}
 .float-track-btn{display:none;position:fixed;top:6px;right:10px;z-index:15;background:#0f3460;color:#fff;border:1px solid #2ecc71;padding:8px 14px;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer}
 @media (max-width:767px){ .float-track-btn{display:block} }
+.mobile-keyboard{display:none;flex-shrink:0;background:#16213e;border-top:1px solid #0f3460;padding:6px;gap:6px;flex-direction:column;user-select:none;-webkit-user-select:none}
+@media (max-width:767px){ .mobile-keyboard:not(.collapsed){display:flex} }
+.mk-row{display:flex;gap:6px}
+.mk-figs button{flex:1;min-width:0;background:#1a1a2e;border:1px solid #0f3460;border-radius:8px;color:#e0e0e0;padding:6px 0 4px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;touch-action:manipulation}
+.mk-figs button:active{background:#0f3460;border-color:#2ecc71;color:#fff}
+.mk-glyph{font-family:'Noto Music','Segoe UI Symbol',serif;font-size:22px;line-height:1}
+.mk-num{font-size:.6rem;color:#888}
+.mk-dpad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:4px;flex:0 0 auto;width:128px}
+.mk-dpad button{background:#1a1a2e;border:1px solid #0f3460;border-radius:8px;color:#2ecc71;font-size:1.1rem;cursor:pointer;touch-action:manipulation;min-height:30px}
+.mk-dpad button:active{background:#0f3460;color:#fff}
+.mk-up{grid-column:2;grid-row:1}
+.mk-left{grid-column:1;grid-row:2}
+.mk-down{grid-column:2;grid-row:2}
+.mk-right{grid-column:3;grid-row:2}
+.mk-actions{display:flex;flex-direction:column;gap:6px;flex:1}
+.mk-actions button{flex:1;border-radius:8px;border:1px solid #0f3460;background:#1a1a2e;color:#e0e0e0;font-size:.8rem;font-weight:600;cursor:pointer;touch-action:manipulation}
+.mk-actions button:active{background:#0f3460;color:#fff}
+.mk-rest{color:#f1c40f}
+.mk-del{color:#e74c3c}
 .info-bar{padding:6px 10px;background:#0f3460;font-size:.7rem;color:#aaa;display:flex;flex-wrap:wrap;gap:4px 16px;flex-shrink:0;border-top:1px solid #1a1a2e}
 .info-bar span{white-space:nowrap}
 canvas{display:block;margin:auto}
@@ -118,6 +137,30 @@ canvas{display:block;margin:auto}
 <span id="infoOctave">Octava: 4</span>
 <span id="infoBeam">Plicas: Auto</span>
 <span>Tempo <button id="tempoDown" class="tempo-btn">−</button><input id="tempoVal" type="number" inputmode="numeric" min="40" max="200" step="1" value="100" aria-label="Tempo BPM"><button id="tempoUp" class="tempo-btn">+</button> BPM</span>
+</div>
+
+<div class="mobile-keyboard" id="mobileKeyboard">
+<div class="mk-row mk-figs">
+<button type="button" data-dur="7"><span class="mk-glyph">&#x1D15D;</span><span class="mk-num">7</span></button>
+<button type="button" data-dur="6"><span class="mk-glyph">&#x1D15E;</span><span class="mk-num">6</span></button>
+<button type="button" data-dur="5"><span class="mk-glyph">&#x1D15F;</span><span class="mk-num">5</span></button>
+<button type="button" data-dur="4"><span class="mk-glyph">&#x1D160;</span><span class="mk-num">4</span></button>
+<button type="button" data-dur="3"><span class="mk-glyph">&#x1D161;</span><span class="mk-num">3</span></button>
+<button type="button" data-dur="2"><span class="mk-glyph">&#x1D162;</span><span class="mk-num">2</span></button>
+<button type="button" data-dur="1"><span class="mk-glyph">&#x1D163;</span><span class="mk-num">1</span></button>
+</div>
+<div class="mk-row">
+<div class="mk-actions">
+<button type="button" class="mk-rest" data-act="rest">&#x1D13D; Silencio</button>
+<button type="button" class="mk-del" data-act="del">&#x232B; Suprimir</button>
+</div>
+<div class="mk-dpad">
+<button type="button" class="mk-up" data-nav="up">&#x2191;</button>
+<button type="button" class="mk-left" data-nav="left">&#x2190;</button>
+<button type="button" class="mk-down" data-nav="down">&#x2193;</button>
+<button type="button" class="mk-right" data-nav="right">&#x2192;</button>
+</div>
+</div>
 </div>
 
 <div id="modal">
@@ -1482,9 +1525,10 @@ document.getElementById('panelHead').onclick = togglePanel;
 document.getElementById('btnTracks').onclick = togglePanel;
 document.getElementById('btnFloatTracks').onclick = togglePanel;
 
-// ---- Teclado nativo del teléfono ----
-// Un campo de texto invisible captura las pulsaciones del teclado por defecto y
-// las enruta a la misma lógica de la app (números, k/o/l/ñ, r, h...).
+// ---- Campo oculto (compatibilidad) ----
+// Ya no se enfoca ni convoca el teclado del sistema: el móvil usa el teclado
+// táctil propio de abajo. El campo solo queda como respaldo por si algún
+// navegador entrega caracteres vía beforeinput/input.
 const hiddenInput = document.getElementById('hiddenInput');
 
 // Los teclados virtuales disparan VARIOS eventos con el MISMO carácter
@@ -1502,16 +1546,39 @@ function alreadyHandled(ch){
   return false;
 }
 
-function summonKeyboard(){
-  try{ hiddenInput.focus(); }catch(err){}
-  if(hiddenInput.setSelectionRange) hiddenInput.setSelectionRange(hiddenInput.value.length, hiddenInput.value.length);
+// ---- Teclado táctil propio (móvil) ----
+// Sustituye al teclado por defecto del teléfono: botones independientes para
+// cada figura, flechas de navegación, suprimir y convertir en silencio.
+const mobileKeyboard = document.getElementById('mobileKeyboard');
+document.getElementById('btnTeclado').onclick = ()=>{
+  if(!mobileKeyboard) return;
+  mobileKeyboard.classList.toggle('collapsed');
+  resize();
+};
+if(mobileKeyboard){
+  mobileKeyboard.querySelectorAll('[data-dur]').forEach(b=>{
+    b.onclick = ()=>{
+      const dur = parseInt(b.dataset.dur, 10);
+      addNote(dur);
+      playNote(Math.max(0, Math.min(127, posToMidi(cursorStaffPos) + accidental)));
+    };
+  });
+  mobileKeyboard.querySelectorAll('[data-nav]').forEach(b=>{
+    b.onclick = ()=>{
+      const d = b.dataset.nav;
+      if(d === 'up') navUp();
+      else if(d === 'down') navDown();
+      else if(d === 'left') navLeft();
+      else navRight();
+    };
+  });
+  mobileKeyboard.querySelectorAll('[data-act]').forEach(b=>{
+    b.onclick = ()=>{
+      if(b.dataset.act === 'rest') makeRest();
+      else if(b.dataset.act === 'del') deleteNote();
+    };
+  });
 }
-document.getElementById('btnTeclado').onclick = summonKeyboard;
-// iOS no abre el teclado salvo tras un gesto del usuario: el primer toque
-// (en cualquier parte) enfoca el input y convoca el teclado del sistema.
-// Se llama de forma SÍNCRONA dentro del gesto (setTimeout rompe el gesto en iOS).
-document.addEventListener('pointerdown', summonKeyboard, {once:true});
-staffArea.addEventListener('pointerdown', summonKeyboard);
 
 // Teclados virtuales modernos (Android, iOS 16.4+): el carácter llega en `data`
 // justo antes de insertarse. Cancelarlo evita que el texto se acumule en el campo
