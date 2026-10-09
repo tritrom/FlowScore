@@ -10,26 +10,26 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',sans-serif;background:#000000;color:#e0e0e0;min-height:100vh;display:flex;flex-direction:column;align-items:center}
-h1{margin:30px 0 10px;font-size:2rem;color:#f1c40f}
+h1{margin:30px 0 10px;font-size:2rem;color:#ffe600}
 .sub{color:#888;margin-bottom:30px;font-size:.9rem}
 #proyectos{width:90%;max-width:700px;display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
 .proj-card{background:#111111;border:1px solid #333333;border-radius:8px;padding:16px 20px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:.2s}
-.proj-card:hover{border-color:#f1c40f;transform:translateY(-2px)}
+.proj-card:hover{border-color:#ffe600;transform:translateY(-2px)}
 .proj-card .info{display:flex;flex-direction:column;gap:4px}
 .proj-card .name{font-size:1.1rem;font-weight:600;color:#fff}
 .proj-card .meta{font-size:.8rem;color:#888}
-.proj-card .del{background:#f1c40f;border:none;color:#000;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;line-height:1}
-#nuevoBtn{margin:10px 0 40px;padding:14px 36px;background:#f1c40f;color:#000;border:none;border-radius:8px;font-size:1.1rem;cursor:pointer;font-weight:600;transition:.2s}
-#nuevoBtn:hover{background:#d4ac0d}
+.proj-card .del{background:#ffe600;border:none;color:#000;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;line-height:1}
+#nuevoBtn{margin:10px 0 40px;padding:14px 36px;background:#ffe600;color:#000;border:none;border-radius:8px;font-size:1.1rem;cursor:pointer;font-weight:600;transition:.2s}
+#nuevoBtn:hover{background:#e6cf00}
 #modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);justify-content:center;align-items:center;z-index:10}
 #modal.show{display:flex}
 .modal-box{background:#111111;border:1px solid #333333;border-radius:12px;padding:30px;width:90%;max-width:420px}
-.modal-box h2{margin-bottom:20px;color:#f1c40f;font-size:1.3rem}
+.modal-box h2{margin-bottom:20px;color:#ffe600;font-size:1.3rem}
 .modal-box label{display:block;margin:10px 0 4px;font-size:.85rem;color:#aaa}
 .modal-box input,.modal-box select{width:100%;padding:10px;border-radius:6px;border:1px solid #333333;background:#000000;color:#fff;font-size:.95rem}
 .modal-box .btns{display:flex;gap:10px;margin-top:24px;justify-content:flex-end}
 .modal-box .btns button{padding:10px 24px;border:none;border-radius:6px;font-size:.95rem;cursor:pointer;font-weight:600}
-.btn-aceptar{background:#f1c40f;color:#000}
+.btn-aceptar{background:#ffe600;color:#000}
 .btn-cancelar{background:#333;color:#aaa}
 #vacio{text-align:center;color:#555;margin-top:40px;font-size:.95rem}
 @media (max-width:560px){
@@ -67,6 +67,8 @@ h1{font-size:1.5rem;margin:24px 0 8px}
 <option value="3/4">3/4</option>
 <option value="2/4">2/4</option>
 <option value="6/8">6/8</option>
+<option value="7/8">7/8</option>
+<option value="2/2">2/2</option>
 <option value="5/4">5/4</option>
 </select>
 <label>Tonalidad</label>

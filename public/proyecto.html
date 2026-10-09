@@ -15,20 +15,20 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',sans-serif;background:#000000;color:#e0e0e0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
 .topbar{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#111111;border-bottom:1px solid #333333;flex-shrink:0;flex-wrap:wrap}
-.topbar a{color:#f1c40f;text-decoration:none;font-size:.9rem}
+.topbar a{color:#ffe600;text-decoration:none;font-size:.9rem}
 .topbar .title{font-size:1rem;font-weight:600;color:#fff;flex:1}
 .topbar button{background:#333333;color:#aaa;border:1px solid #3a3a3a;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.8rem}
-.topbar button:hover{border-color:#f1c40f;color:#fff}
+.topbar button:hover{border-color:#ffe600;color:#fff}
 .topbar-btns{display:flex;gap:8px;flex-wrap:wrap;width:100%}
 .topbar-btns button{flex:1;padding:10px 8px;font-size:.85rem;font-weight:600}
-#btnPlay{background:#f1c40f;color:#000;border-color:#f1c40f;font-weight:700}
-#btnPlay:hover{background:#f7d33e;color:#000}
+#btnPlay{background:#ffe600;color:#000;border-color:#ffe600;font-weight:700}
+#btnPlay:hover{background:#fff04d;color:#000}
 #btnStop{background:#922b21;color:#fff;border-color:#e74c3c;font-weight:700}
 #btnStop:hover{background:#c0392b;color:#fff}
-.tempo-btn{background:none;border:1px solid #333333;color:#f1c40f;width:20px;height:20px;line-height:1;border-radius:4px;cursor:pointer;padding:0;font-size:.85rem}
+.tempo-btn{background:none;border:1px solid #333333;color:#ffe600;width:20px;height:20px;line-height:1;border-radius:4px;cursor:pointer;padding:0;font-size:.85rem}
 .tempo-btn:hover{background:#333333;color:#fff}
-#tempoVal{width:52px;text-align:center;background:#000000;color:#f1c40f;border:1px solid #333333;border-radius:4px;font-size:.85rem;padding:2px 0;font-weight:700}
-#tempoVal:focus{outline:none;border-color:#f1c40f}
+#tempoVal{width:52px;text-align:center;background:#000000;color:#ffe600;border:1px solid #333333;border-radius:4px;font-size:.85rem;padding:2px 0;font-weight:700}
+#tempoVal:focus{outline:none;border-color:#ffe600}
 #tempoVal::-webkit-outer-spin-button,
 #tempoVal::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 #tempoVal{-moz-appearance:textfield}
@@ -45,23 +45,23 @@ body{font-family:'Segoe UI',sans-serif;background:#000000;color:#e0e0e0;height:1
 .track-list{flex:1;overflow-y:auto;padding:6px}
 .track-item{padding:10px 12px;margin:4px 0;border-radius:6px;cursor:pointer;font-size:.85rem;border:1px solid transparent;transition:.15s}
 .track-item:hover{background:#000000;border-color:#333333}
-.track-item.active{background:#333333;border-color:#f1c40f;color:#fff}
-.instrument-select{display:block;width:100%;margin-top:6px;background:#000000;color:#f1c40f;border:1px solid #333333;border-radius:4px;font-size:.75rem;padding:2px 4px;cursor:pointer}
+.track-item.active{background:#333333;border-color:#ffe600;color:#fff}
+.instrument-select{display:block;width:100%;margin-top:6px;background:#000000;color:#ffe600;border:1px solid #333333;border-radius:4px;font-size:.75rem;padding:2px 4px;cursor:pointer}
 .modal-track .instrument-select{margin-top:10px}
 .add-track{margin:8px;padding:10px;border:2px dashed #333;border-radius:6px;text-align:center;color:#555;cursor:pointer;font-size:1.2rem}
-.add-track:hover{border-color:#f1c40f;color:#f1c40f}
+.add-track:hover{border-color:#ffe600;color:#ffe600}
 #hiddenInput{position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;border:none;padding:0;font-size:16px;pointer-events:none}
-.float-track-btn{display:none;position:fixed;top:6px;right:10px;z-index:15;background:#333333;color:#fff;border:1px solid #f1c40f;padding:8px 14px;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer}
+.float-track-btn{display:none;position:fixed;top:6px;right:10px;z-index:15;background:#333333;color:#fff;border:1px solid #ffe600;padding:8px 14px;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer}
 @media (max-width:767px){ .float-track-btn{display:block} }
 .mobile-keyboard{display:none;flex-shrink:0;background:#111111;border-top:1px solid #333333;padding:6px;gap:6px;flex-direction:column;user-select:none;-webkit-user-select:none}
 @media (max-width:767px){ .mobile-keyboard:not(.collapsed){display:flex} }
 .mk-row{display:flex;gap:6px}
 .mk-figs button{flex:1;min-width:0;background:#000000;border:1px solid #333333;border-radius:8px;color:#e0e0e0;padding:6px 0 4px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;touch-action:manipulation}
-.mk-figs button:active{background:#333333;border-color:#f1c40f;color:#fff}
+.mk-figs button:active{background:#333333;border-color:#ffe600;color:#fff}
 .mk-glyph{font-family:'Noto Music','Segoe UI Symbol',serif;font-size:22px;line-height:1}
 .mk-num{font-size:.6rem;color:#888}
 .mk-dpad{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:4px;flex:0 0 auto;width:128px}
-.mk-dpad button{background:#000000;border:1px solid #333333;border-radius:8px;color:#f1c40f;font-size:1.1rem;cursor:pointer;touch-action:manipulation;min-height:30px}
+.mk-dpad button{background:#000000;border:1px solid #333333;border-radius:8px;color:#ffe600;font-size:1.1rem;cursor:pointer;touch-action:manipulation;min-height:30px}
 .mk-dpad button:active{background:#333333;color:#fff}
 .mk-up{grid-column:2;grid-row:1}
 .mk-left{grid-column:1;grid-row:2}
@@ -70,7 +70,8 @@ body{font-family:'Segoe UI',sans-serif;background:#000000;color:#e0e0e0;height:1
 .mk-actions{display:flex;flex-direction:column;gap:6px;flex:1}
 .mk-actions button{flex:1;border-radius:8px;border:1px solid #333333;background:#000000;color:#e0e0e0;font-size:.8rem;font-weight:600;cursor:pointer;touch-action:manipulation}
 .mk-actions button:active{background:#333333;color:#fff}
-.mk-rest{color:#f1c40f}
+.mk-rest{color:#ffe600}
+.mk-tie{color:#4ea1ff}
 .mk-del{color:#e74c3c}
 .info-bar{padding:6px 10px;background:#333333;font-size:.7rem;color:#aaa;display:flex;flex-wrap:wrap;gap:4px 16px;flex-shrink:0;border-top:1px solid #000000}
 .info-bar span{white-space:nowrap}
@@ -78,18 +79,18 @@ canvas{display:block;margin:auto}
 #modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);justify-content:center;align-items:flex-end;z-index:10}
 #modal.show{display:flex}
 .modal-box{background:#111111;border:1px solid #333333;border-radius:14px 14px 0 0;padding:24px;width:100%;max-width:100%}
-.modal-box h2{margin-bottom:16px;color:#f1c40f;font-size:1.2rem}
+.modal-box h2{margin-bottom:16px;color:#ffe600;font-size:1.2rem}
 .modal-track{padding:12px;border-radius:6px;cursor:pointer;border:1px solid #333333;margin:6px 0;transition:.15s}
-.modal-track:hover{border-color:#f1c40f;background:#000000}
+.modal-track:hover{border-color:#ffe600;background:#000000}
 .view-opts{display:flex;gap:10px}
 .view-opt{flex:1;padding:12px 10px;border-radius:6px;cursor:pointer;border:1px solid #333333;background:#000000;color:#aaa;font-size:.9rem;transition:.15s}
-.view-opt:hover{border-color:#f1c40f;color:#fff}
-.view-opt.active{background:#333333;border-color:#f1c40f;color:#fff}
+.view-opt:hover{border-color:#ffe600;color:#fff}
+.view-opt.active{background:#333333;border-color:#ffe600;color:#fff}
 .modal-close{margin-top:16px;text-align:right}
 .modal-close button{background:#333;color:#aaa;border:none;padding:8px 20px;border-radius:6px;cursor:pointer}
 .help{position:fixed;bottom:50px;left:50%;transform:translateX(-50%);background:#111111;border:1px solid #333333;border-radius:8px;padding:16px 18px;font-size:.75rem;line-height:1.7;color:#aaa;z-index:5;display:none;width:calc(100% - 24px);max-width:500px}
 .help.show{display:block}
-.help b{color:#f1c40f}
+.help b{color:#ffe600}
 @media (min-width:768px){
 .main{flex-direction:row}
 #modal{align-items:center}
@@ -154,6 +155,7 @@ canvas{display:block;margin:auto}
 <div class="mk-row">
 <div class="mk-actions">
 <button type="button" class="mk-rest" data-act="rest">&#x1D13D; Silencio</button>
+<button type="button" class="mk-tie" data-act="tie">&#x2040; Ligadura</button>
 <button type="button" class="mk-del" data-act="del">&#x232B; Suprimir</button>
 </div>
 <div class="mk-dpad">
@@ -189,7 +191,8 @@ P - Scroll derecha | I - Scroll izquierda<br><br>
 4 - Corchea | 5 - Negra | 6 - Blanca | 7 - Redonda<br>
 R - Silencio (sobre una nota la convierte a silencio; o escribe el número y luego R, p.ej. 5 + R = silencio de negra)<br><br>
 <b>Otras:</b><br>
-+ / -  - Alteración sostenido/bemol | Backspace/Supr - Borrar nota<br><br>
++ / -  - Alteración sostenido/bemol | Backspace/Supr - Borrar nota<br>
+T - Ligadura (une la nota actual con la siguiente nota; el arco aparece al escribirla)<br><br>
 <b>Reproductor:</b><br>
 Espacio - Reproducir/Pausar | Esc - Detener | Tempo ajustable abajo
 </div>
@@ -267,7 +270,8 @@ let clef = 'treble';
 let cursorBeat = 0;      // posición rítmica del cursor en negras (beat global)
 let cursorStaffPos = 4; // vertical position on staff (staffPos units, 4 = B4 middle line)
 let octave = 4;
-let accidental = 0;
+let accidental = 0;   // alteración pendiente: 1 = sostenido, -1 = bemol, 0 = ninguna
+let natural = false;  // becuadro pendiente (cancela la alteración de la armadura)
 let viewMode = 'pagina';
 let cursorVisible = true;
 
@@ -292,22 +296,24 @@ const player = {
 // Staff lines from top: F5(77)=line1, D5(74)=line2, B4(71)=line3, G4(67)=line4, E4(64)=line5
 // Position 0 = above top line, negative = above, positive = below
 
+// Posición diatónica absoluta (C0 = 0) de la línea SUPERIOR del pentagrama según
+// la clave: Sol/F5 = 38, Fa/A3 = 26. Todo el mapeo altura<->MIDI depende de esto.
+function clefTopAbs(){
+  return (project && project.clave === 'fa') ? 26 : 38;
+}
+
 function midiToPos(midi){
-  // Treble clef: top line = F5 (77), each line/space = 2 semitones in diatonic scale
-  // Approximate: map midi note to diatonic position
   const noteIdx = midi % 12;
   const octaveNum = Math.floor(midi / 12) - 1;
   // Diatonic positions: C=0, D=1, E=2, F=3, G=4, A=5, B=6
   const chromatic = [0,0,1,1,2,3,3,4,4,5,5,6];
   const diatonic = chromatic[noteIdx];
   const absPos = octaveNum * 7 + diatonic;
-  // F5 is at octave 5, diatonic 3 = absPos 38
-  // That's staff line 1 (top). Staff line 5 (bottom) = E4 = octave 4, diatonic 2 = absPos 30
-  return 38 - absPos; // positive = above staff, negative = below
+  return clefTopAbs() - absPos; // positive = above staff, negative = below
 }
 
 function posToMidi(pos){
-  const absNote = 38 - pos;
+  const absNote = clefTopAbs() - pos;
   const octNum = Math.floor(absNote / 7);
   const dia = ((absNote % 7) + 7) % 7;
   const diaToChromatic = [0,2,4,5,7,9,11]; // C D E F G A B
@@ -326,7 +332,7 @@ const staffArea = document.querySelector('.pent-area');
 const STAVE_HEIGHT = LINE_SP * 4;        // alto del pentagrama (4 espacios)
 const MEASURES_PER_SYSTEM = 6;           // compases por sistema
 const MEASURE_W = 190;                    // ancho de cada compás (px)
-const SYST_GAP = 70;                      // separación vertical entre sistemas
+const SYST_GAP = 98;                      // separación vertical entre sistemas (deja lugar a las líneas adicionales)
 const TRACK_GAP = 46;                     // separación vertical entre tracks (modo scroll)
 // Márgenes de la "hoja" (como en una partitura original)
 const PAGE_ML = 70;                       // margen izquierdo
@@ -467,6 +473,17 @@ function getCellBeat(arr, i){
   return b;
 }
 
+// Asegura que TODAS las celdas guardan su `beat` explícito, derivándolo de la
+// duración acumulada cuando falta (datos antiguos). Lo usa el borrado "ripple",
+// que reubica las figuras posteriores.
+function materializeBeats(notes){
+  let b = 0;
+  for(let i = 0; i < notes.length; i++){
+    if(notes[i].beat === undefined) notes[i].beat = b;
+    b = notes[i].beat + (DUR_BEATS[notes[i].duration] || 4);
+  }
+}
+
 function buildMeasures(notesArr){
   // Agrupa las notas en compases según SU POSICIÓN RÍTMICA (beat), respetando
   // la métrica. La partitura tiene un nº fijo de compases (nBars / 33); los
@@ -486,11 +503,24 @@ function buildMeasures(notesArr){
   return measures;
 }
 
-// Nº de corcheas por grupo de beam según el denominador de la métrica.
-// Métrica simple (den 1,2,4): 2 corcheas = 1 negra (pulso). Compuesta (den 8): 3 corcheas = pulso.
-function beamCorcheasPerGroup(compas){
-  const den = parseInt(String(compas || '4/4').split('/')[1]) || 4;
-  return den === 8 ? 3 : 2;
+// Patrón de pulsos de la métrica: duración (en negras) de cada pulso, de
+// izquierda a derecha. Determina cómo se agrupan las plicas.
+//   Simple   (den 4/2/1): un pulso por unidad del denominador.
+//   Compuesto (den 8/16, num múltiplo de 3): pulso = figura con puntillo (3 unidades).
+//   Irregulares en /8: patrones explícitos (5/8=3+2, 7/8=3+2+2, 8/8=3+3+2).
+function meterPulses(compas){
+  const [num, den] = String(compas || '4/4').split('/').map(x => parseInt(x, 10));
+  const n = Math.max(1, num || 4), d = Math.max(1, den || 4);
+  const unit = 4 / d; // duración de la unidad del denominador, en negras
+  if(d === 8){
+    const irregular = {5:[3,2], 7:[3,2,2], 8:[3,3,2]};
+    const pat = irregular[n] || (n % 3 === 0 ? new Array(n / 3).fill(3) : null);
+    if(pat) return pat.map(k => k * unit);
+  }
+  if(d === 16 && n % 3 === 0) return new Array(n / 3).fill(3 * unit);
+  const pulses = [];
+  for(let i = 0; i < n; i++) pulses.push(unit);
+  return pulses;
 }
 
 function noteHeadY(n, sysTop){
@@ -514,46 +544,63 @@ function drawNotehead(x, y, filled){
 }
 
 function drawNoteAccidental(n, x, y){
-  if(n.accidental === 0) return;
+  let glyph = null;
+  if(n.natural) glyph = '\u266E';            // ♮ becuadro
+  else if(n.accidental === 1) glyph = '\u266F'; // ♯ sostenido
+  else if(n.accidental === -1) glyph = '\u266D'; // ♭ bemol
+  if(!glyph) return;
   ctx.fillStyle = '#000';
   ctx.font = '20px "Noto Music", "Segoe UI Symbol", serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(n.accidental === 1 ? '\u266F' : '\u266D', x - 16, y);
+  ctx.fillText(glyph, x - 16, y);
 }
 
-// Calcula los grupos de beam (índices dentro de `meas`) para un compás, según
-// la duración del pulso de la métrica y los overrides manuales ('separate'/'join').
-// Reutilizado por drawMeasure (dibujo) y toggleBeamOverride (tecla H).
-function computeBeamGroups(meas, notesArr, compas, pulseDur){
+// Calcula los grupos de beam (índices dentro de `meas`) para un compás, alineados
+// a la rejilla de pulsos de la métrica: sólo se unen figuras que empiezan dentro
+// del MISMO pulso. Los overrides manuales permiten separar ('separate') o unir a
+// través del pulso ('join'). Reutilizado por drawMeasure (dibujo) y
+// toggleBeamOverride (tecla H).
+function computeBeamGroups(meas, notesArr, compas){
   const FLAGS = {1:4, 2:3, 3:2, 4:1, 5:0, 6:0, 7:0};
   const n = meas.length;
+  if(n === 0) return [];
+  // Límites de pulso en beats dentro del compás: 0, p0, p0+p1, ...
+  const pulses = meterPulses(compas);
+  const mBeats = pulses.reduce((a, b) => a + b, 0) || measureBeats(compas);
+  const bounds = [0];
+  let acc = 0;
+  for(const p of pulses){ acc += p; bounds.push(acc); }
+  const barStart = Math.floor(getCellBeat(notesArr, meas[0]) / mBeats) * mBeats;
   const flags = meas.map(i => notesArr[i].isEmpty ? 0 : (FLAGS[notesArr[i].duration] || 0));
-  if(pulseDur === undefined) pulseDur = beamCorcheasPerGroup(compas) * 0.5;
+  const isBeamable = k => flags[k] > 0 && !notesArr[meas[k]].isRest && notesArr[meas[k]].beamOverride !== 'separate';
+  const pulseOf = k => {
+    const local = getCellBeat(notesArr, meas[k]) - barStart;
+    for(let p = 0; p < pulses.length; p++){
+      if(local < bounds[p + 1] - 1e-6) return p;
+    }
+    return pulses.length - 1;
+  };
   const groups = [];
   let i = 0;
   while(i < n){
-    // 'separate' fuerza gancho individual (la figura nunca entra en un beam).
-    if(flags[i] > 0 && !notesArr[meas[i]].isRest && notesArr[meas[i]].beamOverride !== 'separate'){
-      const g = [i];
-      let sum = DUR_BEATS[notesArr[meas[i]].duration] || 0.5;
-      let j = i + 1;
-      while(j < n && flags[j] > 0 && !notesArr[meas[j]].isRest && notesArr[meas[j]].beamOverride !== 'separate'){
-        const dj = DUR_BEATS[notesArr[meas[j]].duration] || 0.5;
-        // 'join' en la última figura del grupo permite unir más allá del pulso.
-        const force = notesArr[meas[g[g.length - 1]]] && notesArr[meas[g[g.length - 1]]].beamOverride === 'join';
-        if(!force && sum + dj > pulseDur + 1e-6) break;
-        g.push(j);
-        sum += dj;
-        j++;
-      }
-      // Un grupo de beam sólo tiene sentido con 2+ figuras unibles; una figura
-      // solitaria se dibuja con su gancho individual (drawNote).
-      if(g.length >= 2) groups.push(g);
-      i = j;
-    } else {
-      i++;
+    if(!isBeamable(i)){ i++; continue; }
+    const g = [i];
+    let curPulse = pulseOf(i);
+    let j = i + 1;
+    while(j < n && isBeamable(j)){
+      const jPulse = pulseOf(j);
+      // Sólo se une dentro del mismo pulso, salvo que la figura previa pida 'join'.
+      const prevForce = notesArr[meas[g[g.length - 1]]].beamOverride === 'join';
+      if(jPulse !== curPulse && !prevForce) break;
+      g.push(j);
+      curPulse = jPulse;
+      j++;
     }
+    // Un grupo de beam sólo tiene sentido con 2+ figuras unibles; una figura
+    // solitaria se dibuja con su gancho individual (drawNote).
+    if(g.length >= 2) groups.push(g);
+    i = j;
   }
   return groups;
 }
@@ -579,17 +626,17 @@ function drawMeasure(meas, notesArr, mx, mBeats, sysTop, needCoords, compas){
     xs.push(mx + (local / mBeats) * MEASURE_W + centerOff);
   }
 
-  // Agrupar figuras cortas consecutivas (corcheas y menores) en beams. La
-  // agrupación se basa en la duración del pulso de la métrica (no en un nº fijo
-  // de corcheas), de modo que se respetan los pulsos y las síncopas: un grupo
-  // cubre hasta la duración de un pulso, y si una figura empieza en tiempo débil
-  // (síncopa), el grupo se forma hacia el pulso siguiente.
-  const pulseDur = beamCorcheasPerGroup(compas) * 0.5; // pulso en beats (negra simple, negra c/pto compuesta)
-  const groups = computeBeamGroups(meas, notesArr, compas, pulseDur);
+  // Agrupar figuras cortas consecutivas (corcheas y menores) en beams, alineados
+  // a la rejilla de pulsos de la métrica (ver meterPulses/computeBeamGroups).
+  const groups = computeBeamGroups(meas, notesArr, compas);
 
+  const stemDir = (notesArr, meas, k) => (notesArr[meas[k]].staffPos !== undefined ? notesArr[meas[k]].staffPos : notesArr[meas[k]].position);
   const beamSet = new Set();
   for(const g of groups){
-    const stemUp = g.reduce((s,k)=> s + ((notesArr[meas[k]].staffPos!==undefined)?notesArr[meas[k]].staffPos:notesArr[meas[k]].position), 0) / g.length >= 4;
+    // Dirección de plica del grupo: hacia arriba si la media está por debajo de
+    // la línea central (pos > 4), hacia abajo si está por encima. Mismo criterio
+    // que las notas sueltas (drawNote) para que las síncopas no mezclen sentidos.
+    const stemUp = g.reduce((s,k)=> s + stemDir(notesArr, meas, k), 0) / g.length > 4;
     const maxF = Math.max.apply(null, g.map(k => flags[k]));
     const stemLen = 30;
     let beamY;
@@ -598,27 +645,45 @@ function drawMeasure(meas, notesArr, mx, mBeats, sysTop, needCoords, compas){
     } else {
       beamY = Math.max.apply(null, g.map(k => noteHeadY(notesArr[meas[k]], sysTop) + stemLen));
     }
-    const x0 = xs[g[0]];
-    const xN = xs[g[g.length - 1]];
+    // Posición horizontal de la plica de cada figura (borde del óvalo): las
+    // barras se apoyan en las plicas, no en el centro de la cabeza.
+    const stemXs = g.map(k => stemUp ? xs[k] + HEAD_W / 2 - 1 : xs[k] - HEAD_W / 2 + 1);
 
-    for(const k of g){
+    g.forEach((k, gi) => {
       const ny = noteHeadY(notesArr[meas[k]], sysTop);
+      const sx = stemXs[gi];
       ctx.strokeStyle = '#000';
       ctx.lineWidth = 1.7;
       ctx.beginPath();
-      ctx.moveTo(xs[k], ny + (stemUp ? -HEAD_H / 2 : HEAD_H / 2));
-      ctx.lineTo(xs[k], beamY);
+      ctx.moveTo(sx, ny + (stemUp ? -HEAD_H / 2 : HEAD_H / 2));
+      ctx.lineTo(sx, beamY);
       ctx.stroke();
-      drawLedgerLines((notesArr[meas[k]].staffPos!==undefined)?notesArr[meas[k]].staffPos:notesArr[meas[k]].position, xs[k], sysTop);
+      drawLedgerLines(stemDir(notesArr, meas, k), xs[k], sysTop);
       drawNoteAccidental(notesArr[meas[k]], xs[k], ny);
       drawNotehead(xs[k], ny, true);
       beamSet.add(k);
-    }
-    // Barras del beam (una por cada "cola" de la figura más corta del grupo).
+    });
+
+    // Barras: la primaria (f=0) recorre todo el grupo; las secundarias (f>0)
+    // sólo las figuras que las necesitan. Así una corchea entre semicorcheas
+    // (p. ej. 3-4-3) queda con UNA barra y no se ve como semicorchea.
     for(let f = 0; f < maxF; f++){
       const by = beamY + (stemUp ? f * 5 : -f * 5);
-      ctx.fillStyle = '#000';
-      ctx.fillRect(x0 - 2, by, (xN - x0) + 4, 4);
+      let runStart = -1;
+      for(let gi = 0; gi <= g.length; gi++){
+        const need = gi < g.length && flags[g[gi]] > f;
+        if(need){
+          if(runStart < 0) runStart = gi;
+        } else if(runStart >= 0){
+          let xa = stemXs[runStart] - 2;
+          let xb = stemXs[gi - 1] + 2;
+          // Tramo de una sola figura: pequeño muñón centrado en su plica.
+          if(gi - 1 === runStart){ xa = stemXs[runStart] - 6; xb = stemXs[runStart] + 6; }
+          ctx.fillStyle = '#000';
+          ctx.fillRect(xa, by, xb - xa, 4);
+          runStart = -1;
+        }
+      }
     }
   }
 
@@ -647,6 +712,97 @@ function drawMeasure(meas, notesArr, mx, mBeats, sysTop, needCoords, compas){
       }
     }
   }
+}
+
+// Dibuja las ligaduras de prolongación del track. Se ejecuta después de dibujar
+// todos los compases (así la nota de la derecha ya tiene sus coordenadas) y une
+// cada nota marcada con `tie` con la siguiente nota real a su derecha.
+function drawTies(notes){
+  const mB = measureBeats(project.compas);
+  for(let i = 0; i < notes.length; i++){
+    const n = notes[i];
+    if(!n.tie || n.isEmpty || n.isRest) continue;
+    const x0 = noteXPositions[i], y0 = noteYPositions[i];
+    if(x0 === undefined) continue;
+    const stemUp = (n.staffPos !== undefined ? n.staffPos : n.position) > 4;
+    const dir = stemUp ? 1 : -1;
+    const xa = x0 + HEAD_W / 2 - 1;
+    const ya = noteHeadY(n, y0) + dir * (HEAD_H / 2 + 2);
+    const b0 = getCellBeat(notes, i);
+    // Siguiente nota real a la derecha (se saltan silencios y celdas vacías).
+    let j = -1, jb = Infinity;
+    for(let k = 0; k < notes.length; k++){
+      if(k === i) continue;
+      const nk = notes[k];
+      if(nk.isEmpty || nk.isRest) continue;
+      const b = getCellBeat(notes, k);
+      if(b > b0 + CURSOR_EPS && b < jb){ jb = b; j = k; }
+    }
+    const x1 = j >= 0 ? noteXPositions[j] : undefined;
+    const y1 = j >= 0 ? noteYPositions[j] : undefined;
+    if(j >= 0 && x1 !== undefined && y1 === y0){
+      // Nota de la derecha presente en el mismo sistema: arco completo.
+      const yb = noteHeadY(notes[j], y1) + dir * (HEAD_H / 2 + 2);
+      drawTieArc(xa, ya, x1 - HEAD_W / 2 + 1, yb, stemUp);
+    } else if(j < 0){
+      // Ligadura pendiente: aún no hay nota escrita a la derecha. Se dibuja un
+      // arco que se prolonga hacia la derecha y permanece ahí hasta que aparezca
+      // la próxima nota (entonces pasa a ser un arco completo).
+      const len = Math.max(20, ((DUR_BEATS[n.duration] || 4) / mB) * MEASURE_W);
+      drawTieArc(xa, ya, xa + len, ya, stemUp);
+    }
+    // Si existe pero está en otro sistema, se omite (no se puede unir aquí).
+  }
+}
+
+// Arco de la ligadura entre dos extremos (xa,ya)-(xb,yb). `stemUp` indica que la
+// plica va hacia arriba, con lo que la curva se dibuja por debajo (y al revés).
+function drawTieArc(xa, ya, xb, yb, stemUp){
+  let a = xa, b = xb;
+  if(b - a < 8){ const cx = (a + b) / 2; a = cx - 4; b = cx + 4; }
+  const dir = stemUp ? 1 : -1;
+  const midX = (a + b) / 2;
+  const sag = Math.min(9, Math.max(4, (b - a) * 0.18));
+  const ctrlY = (ya + yb) / 2 + dir * sag * 2;
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(a, ya);
+  ctx.quadraticCurveTo(midX, ctrlY, b, yb);
+  ctx.stroke();
+}
+
+// Índice de la nota "actual" para operaciones (ligadura): la que está bajo el
+// cursor o, si no, la última nota real escrita antes del cursor.
+function currentNoteIndex(notes){
+  const i0 = posFromBeat(cursorBeat, notes);
+  if(i0 >= 0 && Math.abs(getCellBeat(notes, i0) - cursorBeat) < CURSOR_EPS &&
+     !notes[i0].isEmpty && !notes[i0].isRest){
+    return i0;
+  }
+  let prev = -1, prevBeat = -Infinity;
+  for(let i = 0; i < notes.length; i++){
+    const nn = notes[i];
+    if(nn.isEmpty || nn.isRest) continue;
+    const b = getCellBeat(notes, i);
+    if(b < cursorBeat - CURSOR_EPS && b > prevBeat){ prev = i; prevBeat = b; }
+  }
+  return prev;
+}
+
+// Ligadura (tecla T / botón móvil): marca la nota actual para ligarla con la
+// siguiente nota escrita a su derecha (o con la siguiente ya escrita, si la hay).
+// No crea notas: el arco se dibuja en cuanto exista la nota de la derecha y, si
+// aún no está, queda "pendiente" hasta escribirla. Volver a pulsar T desliga.
+function makeTie(){
+  const notes = getNotes();
+  const li = currentNoteIndex(notes);
+  if(li < 0) return;
+  const left = notes[li];
+  left.tie = left.tie ? undefined : true;
+  saveProjects(getProjects().map((p,i)=>i===projIdx?project:p));
+  draw();
+  ensureCursorVisible();
 }
 
 function draw(W, H){
@@ -752,6 +908,7 @@ function drawPage(W, H){
     }
   }
 
+  drawTies(getNotes());
   drawCursor();
   drawPlayHighlight();
   ctx.restore();
@@ -820,6 +977,7 @@ function drawScroll(W, H){
     }
   });
 
+  drawTies(getNotes());
   drawCursor();
   drawPlayHighlight();
   updateInfo();
@@ -924,17 +1082,14 @@ function drawNote(x, n, sysTop){
   const y = sysTop + staffPos * LINE_SP / 2;
   const d = n.duration;
   const hasStem = d <= 6;
-  const stemUp = staffPos < 4;
+  // Plica hacia arriba si la nota está por debajo de la línea central
+  // (pos > 4) y hacia abajo si está por encima. Así las notas sueltas de una
+  // síncopa coinciden con la dirección de sus vecinas unidas por barras.
+  const stemUp = staffPos > 4;
 
   drawLedgerLines(staffPos, x, sysTop);
-
-  if(n.accidental !== 0){
-    ctx.fillStyle = '#000';
-    ctx.font = '20px "Noto Music", "Segoe UI Symbol", serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(n.accidental === 1 ? '\u266F' : '\u266D', x - 15, y);
-  }
+  // Alteración de la nota (♯/♭/♮); misma función que usan las notas con barras.
+  drawNoteAccidental(n, x, y);
 
   // notehead moderno (elipse estándar de notación moderna) + plica/corcheas como primitivas
   const filled = d <= 5;
@@ -1070,17 +1225,20 @@ function drawCursor(){
   const sysTopLine0 = sysTop + STAFF_LINE_YS[0] - STAVE_TOP;
   const sysTopLine4 = sysTop + STAFF_LINE_YS[4] - STAVE_TOP;
 
-  ctx.strokeStyle = '#f1c40f';
+  // La guía vertical llega hasta el cursor aunque esté fuera del pentagrama.
+  const guideTop = Math.min(sysTopLine0 - 12, cy - 12);
+  const guideBottom = Math.max(sysTopLine4 + 12, cy + 12);
+  ctx.strokeStyle = '#ffe600';
   ctx.lineWidth = 2;
   ctx.setLineDash([5, 5]);
   ctx.beginPath();
-  ctx.moveTo(cx, sysTopLine0 - 12);
-  ctx.lineTo(cx, sysTopLine4 + 12);
+  ctx.moveTo(cx, guideTop);
+  ctx.lineTo(cx, guideBottom);
   ctx.stroke();
   ctx.setLineDash([]);
 
   ctx.globalAlpha = 0.3;
-  ctx.fillStyle = '#f1c40f';
+  ctx.fillStyle = '#ffe600';
   ctx.beginPath();
   ctx.arc(cx, cy, 9, 0, Math.PI * 2);
   ctx.fill();
@@ -1098,7 +1256,7 @@ function updateInfo(){
   const barIdx = Math.max(0, Math.min(bars - 1, Math.floor(cursorBeat / measureBeats(project.compas))));
   document.getElementById('infoCursor').textContent = `Medida: ${barIdx + 1}/${bars}`;
   const cur = cellAtBeat(cursorBeat);
-  const midi = cur ? cur.midi : posToMidi(cursorStaffPos);
+  const midi = (cur && !cur.isRest) ? playbackMidi(cur) : playbackMidi({staffPos: cursorStaffPos, accidental, natural});
   const name = NOTE_NAMES[midi%12];
   const oct = Math.floor(midi/12)-1;
   if(cur && cur.isRest){
@@ -1225,6 +1383,7 @@ function addNote(duration){
   note.duration = duration;
   note.midi = finalMidi;
   note.accidental = accidental;
+  note.natural = natural || undefined;
   note.staffPos = cursorStaffPos;
   note.isRest = false;
   note.isEmpty = false;
@@ -1289,8 +1448,27 @@ function deleteNote(){
     del = prev;
   }
   if(del >= 0){
-    delBeat = getCellBeat(notes, del);
+    materializeBeats(notes);
+    const removed = notes[del];
+    delBeat = removed.beat;
+    const delDur = DUR_BEATS[removed.duration] || 4;
+    // Borrado "ripple" SOLO dentro del compás: las figuras posteriores del mismo
+    // compás se corren a la izquierda la duración de la borrada (la 2ª pasa a la
+    // 1ª, la 3ª a la 2ª, ...); las de compases siguientes no se tocan.
+    const mBeats = measureBeats(project.compas);
+    const delBar = Math.floor(delBeat / mBeats);
+    const barStart = delBar * mBeats;
+    const barEnd = barStart + mBeats;
     notes.splice(del, 1);
+    if(!removed.isEmpty){
+      for(const n of notes){
+        if(n.beat > delBeat + CURSOR_EPS && n.beat < barEnd - CURSOR_EPS){
+          n.beat = Math.max(barStart, n.beat - delDur);
+        }
+      }
+    }
+    cursorBeat = delBeat;
+    cursorVisible = true;
   }
   // Si al borrar el compás quedó vacío, el cursor vuelve a su inicio (así se
   // puede volver a escribir en la primera negra/corchea del compás, no al final).
@@ -1305,6 +1483,7 @@ function deleteNote(){
   }
   saveProjects(getProjects().map((p,i)=>i===projIdx?project:p));
   draw();
+  ensureCursorVisible();
 }
 
 // Tecla H: separa/une manualmente las plicas del PAR cuya nota IZQUIERDA está
@@ -1345,35 +1524,79 @@ function toggleBeamOverride(){
 let audioCtx = null;
 function getAudio(){
   if(!audioCtx){
-    audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return null;
+    audioCtx = new AC();
   }
-  if(audioCtx.state === 'suspended') audioCtx.resume();
+  if(audioCtx.state === 'suspended'){ audioCtx.resume().catch(()=>{}); }
   return audioCtx;
 }
 
-function playNote(midi){
+// Desbloquea el audio con el primer gesto del usuario (política de autoplay de
+// los navegadores: un AudioContext creado sin gesto queda suspendido y no suena).
+// Además lo "ceba" con un buffer silencioso, necesario en iOS/Safari.
+let audioPrimed = false;
+function unlockAudio(){
+  const actx = getAudio();
+  if(!actx) return;
+  const prime = () => {
+    if(audioPrimed || !actx.createBuffer) return;
+    try{
+      const buf = actx.createBuffer(1, 1, 22050);
+      const src = actx.createBufferSource();
+      src.buffer = buf;
+      src.connect(actx.destination);
+      if(src.start) src.start(0);
+      audioPrimed = true;
+    }catch(err){}
+  };
+  if(actx.state === 'suspended'){ actx.resume().then(prime).catch(()=>{}); }
+  else { prime(); }
+}
+window.addEventListener('pointerdown', unlockAudio, {passive:true});
+window.addEventListener('touchstart', unlockAudio, {passive:true});
+window.addEventListener('keydown', unlockAudio);
+
+// Referencia auditiva: suena la nota en el momento de escribirla.
+function playNote(midi, duration){
   try{
     const actx = getAudio();
+    if(!actx) return;
     // Frecuencia según la especificación del .txt: f = 440 × 2^((m-69)/12)
     const freq = 440 * Math.pow(2, (midi-69)/12);
-    const osc = actx.createOscillator();
-    const gain = actx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.3, actx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime+0.8);
-    osc.connect(gain);
-    gain.connect(actx.destination);
-    osc.start();
-    osc.stop(actx.currentTime+0.8);
+    const bpm = (typeof project !== 'undefined' && project && project.tempo) ? project.tempo : 120;
+    // Duración audible proporcional a la figura escrita (entre 0.35 s y 1.2 s).
+    const beep = Math.max(0.35, Math.min(1.2, (duration || 1) * (60 / bpm)));
+    const emit = () => {
+      const t = actx.currentTime;
+      const osc = actx.createOscillator();
+      const gain = actx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.linearRampToValueAtTime(0.35, t + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + beep);
+      osc.connect(gain);
+      gain.connect(actx.destination);
+      osc.start(t);
+      osc.stop(t + beep + 0.03);
+    };
+    // Si el contexto aún está suspendido, se reanuda y recién ahí suena la nota.
+    if(actx.state === 'suspended'){ actx.resume().then(emit).catch(()=>{}); }
+    else { emit(); }
   }catch(err){
     // Audio no disponible: ignora el error sin romper la edición de partituras
   }
 }
 
 // ---- Navigation helpers (shared by keyboard & virtual keyboard) ----
-function navUp(){ cursorStaffPos = Math.max(-4, cursorStaffPos - 1); octave = Math.floor(posToMidi(cursorStaffPos) / 12) - 1; draw(); ensureCursorVisible(); }
-function navDown(){ cursorStaffPos = Math.min(14, cursorStaffPos + 1); octave = Math.floor(posToMidi(cursorStaffPos) / 12) - 1; draw(); ensureCursorVisible(); }
+// Rango de escritura: hasta 6 líneas adicionales por encima y por debajo del
+// pentagrama (líneas adicionales = 2 unidades de staffPos cada una).
+const MAX_LEDGER_LINES = 6;
+const CURSOR_POS_TOP = -2 * MAX_LEDGER_LINES;      // -12
+const CURSOR_POS_BOTTOM = 8 + 2 * MAX_LEDGER_LINES; // 20
+function navUp(){ cursorStaffPos = Math.max(CURSOR_POS_TOP, cursorStaffPos - 1); octave = Math.floor(posToMidi(cursorStaffPos) / 12) - 1; draw(); ensureCursorVisible(); }
+function navDown(){ cursorStaffPos = Math.min(CURSOR_POS_BOTTOM, cursorStaffPos + 1); octave = Math.floor(posToMidi(cursorStaffPos) / 12) - 1; draw(); ensureCursorVisible(); }
 function navLeft(){
   const notes = getNotes();
   const mBeats = measureBeats(project.compas);
@@ -1423,12 +1646,16 @@ function handleChar(ch){
   else if(k==='ñ'){ navRight(); }
   else if(k==='p'){ staffArea.scrollBy({left: 200, behavior: 'smooth'}); }
   else if(k==='i'){ staffArea.scrollBy({left: -200, behavior: 'smooth'}); }
-  else if(k>='1'&&k<='7'){ addNote(parseInt(k)); playNote(Math.max(0, Math.min(127, posToMidi(cursorStaffPos) + accidental))); }
+  // La referencia auditiva usa la MISMA afinación que la reproducción
+  // (playbackMidi), de modo que la armadura/alteraciones también suenan al escribir.
+  else if(k>='1'&&k<='7'){ addNote(parseInt(k)); playNote(playbackMidi({staffPos: cursorStaffPos, accidental, natural}), parseInt(k)); }
   else if(k==='r'){ makeRest(); }
+  else if(k==='t'){ makeTie(); }
   else if(k==='h'){ toggleBeamOverride(); }
-  else if(k==='+'||k==='='){ accidental=1; draw(); }
-  else if(k==='-'){ accidental=-1; draw(); }
-  else if(k==='0'){ accidental=0; draw(); }
+  else if(k==='+'||k==='='){ accidental=1; natural=false; draw(); }
+  else if(k==='-'){ accidental=-1; natural=false; draw(); }
+  // '0' alterna entre becuadro (♮) y "sin alteración" (seguir la armadura).
+  else if(k==='0'){ accidental=0; natural=!natural; draw(); }
 }
 
 // Si el foco está en un campo real (p.ej. el BPM), las teclas no deben
@@ -1562,7 +1789,7 @@ if(mobileKeyboard){
     b.onclick = ()=>{
       const dur = parseInt(b.dataset.dur, 10);
       addNote(dur);
-      playNote(Math.max(0, Math.min(127, posToMidi(cursorStaffPos) + accidental)));
+      playNote(playbackMidi({staffPos: cursorStaffPos, accidental, natural}), dur);
     };
   });
   mobileKeyboard.querySelectorAll('[data-nav]').forEach(b=>{
@@ -1577,6 +1804,7 @@ if(mobileKeyboard){
   mobileKeyboard.querySelectorAll('[data-act]').forEach(b=>{
     b.onclick = ()=>{
       if(b.dataset.act === 'rest') makeRest();
+      else if(b.dataset.act === 'tie') makeTie();
       else if(b.dataset.act === 'del') deleteNote();
     };
   });
@@ -1771,7 +1999,7 @@ function exportMIDI(project){
   let lastTick = 0;
   
   notes.forEach((n, i)=> {
-    const noteOn = n.midi || 60;
+    const noteOn = playbackMidi(n) || 60;
     const velocity = n.velocity !== undefined ? n.velocity : 64;
     
     // Note on at current tick
@@ -1833,7 +2061,7 @@ function exportMIDI(project){
 function secPerBeat(){ return 60 / (project.tempo || 100); }
 
 function posToLetter(pos){
-  const absNote = 38 - pos;
+  const absNote = clefTopAbs() - pos;
   const dia = ((absNote % 7) + 7) % 7;
   return ['C','D','E','F','G','A','B'][dia];
 }
@@ -1842,7 +2070,10 @@ function playbackMidi(n){
   const sp = (n.staffPos !== undefined) ? n.staffPos : n.position;
   const base = posToMidi(sp);
   let alter = 0;
-  if(n.accidental && n.accidental !== 0){
+  if(n.natural){
+    // Becuadro: la nota es natural y cancela la alteración de la armadura.
+    alter = 0;
+  } else if(n.accidental && n.accidental !== 0){
     alter = n.accidental;
   } else {
     const letter = posToLetter(sp);
@@ -2025,7 +2256,7 @@ function drawPlayHighlight(){
     const cy = sysTop + sp * LINE_SP / 2;
     ctx.save();
     ctx.globalAlpha = 0.4;
-    ctx.fillStyle = '#f1c40f';
+    ctx.fillStyle = '#ffe600';
     ctx.beginPath();
     ctx.ellipse(x, cy, HEAD_W / 2 + 3, HEAD_H / 2 + 3, -0.28, 0, Math.PI * 2);
     ctx.fill();
