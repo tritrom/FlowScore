@@ -73,6 +73,13 @@ body{font-family:'Segoe UI',sans-serif;background:#000000;color:#e0e0e0;height:1
 .mk-rest{color:#ffe600}
 .mk-tie{color:#4ea1ff}
 .mk-del{color:#e74c3c}
+.topbar button.active{background:#3a3a00;color:#ffe600;border-color:#ffe600}
+.ctx-menu{display:none;position:fixed;z-index:30;background:#111111;border:1px solid #333333;border-radius:8px;padding:4px;min-width:150px;box-shadow:0 4px 14px rgba(0,0,0,.6)}
+.ctx-menu.show{display:flex;flex-direction:column}
+.ctx-menu button{display:block;width:100%;text-align:left;background:none;border:none;color:#e0e0e0;padding:9px 12px;border-radius:6px;font-size:.85rem;cursor:pointer}
+.ctx-menu button:hover{background:#333333;color:#ffe600}
+.ctx-menu button:disabled{color:#555;cursor:default}
+.ctx-menu button:disabled:hover{background:none;color:#555}
 .info-bar{padding:6px 10px;background:#333333;font-size:.7rem;color:#aaa;display:flex;flex-wrap:wrap;gap:4px 16px;flex-shrink:0;border-top:1px solid #000000}
 .info-bar span{white-space:nowrap}
 canvas{display:block;margin:auto}
@@ -114,6 +121,7 @@ canvas{display:block;margin:auto}
 <button id="btnTracks">Tracks</button>
 <button id="btnVista">Cambiar vista</button>
 <button id="btnTeclado">Teclado</button>
+<button id="btnSelCompas" title="Seleccionar compases">&#10148;</button>
 <button id="btnAyuda">Ayuda (?)</button>
 <button id="btnExportar">Exportar</button>
 </div>
@@ -140,6 +148,12 @@ canvas{display:block;margin:auto}
 <span id="infoOctave">Octava: 4</span>
 <span id="infoBeam">Plicas: Auto</span>
 <span>Tempo <button id="tempoDown" class="tempo-btn">−</button><input id="tempoVal" type="number" inputmode="numeric" min="40" max="200" step="1" value="100" aria-label="Tempo BPM"><button id="tempoUp" class="tempo-btn">+</button> BPM</span>
+</div>
+
+<div class="ctx-menu" id="ctxMenu">
+<button type="button" data-ctx="cut">&#9986; Cortar</button>
+<button type="button" data-ctx="copy">&#x2398; Copiar</button>
+<button type="button" data-ctx="paste">&#128203; Pegar</button>
 </div>
 
 <div class="mobile-keyboard" id="mobileKeyboard">
@@ -193,6 +207,9 @@ R - Silencio (sobre una nota la convierte a silencio; o escribe el número y lue
 <b>Otras:</b><br>
 + / -  - Alteración sostenido/bemol | Backspace/Supr - Borrar nota<br>
 T - Ligadura (une la nota actual con la siguiente nota; el arco aparece al escribirla)<br><br>
+<b>Selección de compases:</b><br>
+Botón &#10148; (flecha puntero) - clic = 1 compás | arrastrar = rango | Mayús+clic = ampliar<br>
+Ctrl+C copiar | Ctrl+X cortar | Ctrl+V pegar | clic derecho = menú con las mismas opciones<br><br>
 <b>Reproductor:</b><br>
 Espacio - Reproducir/Pausar | Esc - Detener | Tempo ajustable abajo
 </div>
@@ -908,6 +925,7 @@ function drawPage(W, H){
     }
   }
 
+  drawMeasureSelection();
   drawTies(getNotes());
   drawCursor();
   drawPlayHighlight();
@@ -977,6 +995,7 @@ function drawScroll(W, H){
     }
   });
 
+  drawMeasureSelection();
   drawTies(getNotes());
   drawCursor();
   drawPlayHighlight();
@@ -1809,6 +1828,287 @@ if(mobileKeyboard){
     };
   });
 }
+
+// ---- Selección de compases (móvil y escritorio) ----
+// Botón "➤": al activarlo se selecciona con el puntero sobre la partitura:
+// un clic/toque = un compás; mantener y arrastrar = rango; Mayús+clic = amplía
+// desde el compás seleccionado. Aparecen los botones Cortar y Copiar.
+let selMode = false;
+let selStartBar = null;   // compás inicial (índice 0-based)
+let selEndBar = null;     // compás final (índice 0-based)
+let measureClipboard = null; // {notes, bars, beats} — portapapeles interno
+
+function selectionRange(){
+  if(selStartBar === null) return null;
+  // Un solo toque selecciona UN compás; el segundo lo amplía a rango.
+  const to = selEndBar === null ? selStartBar : selEndBar;
+  return {from: Math.min(selStartBar, to), to: Math.max(selStartBar, to)};
+}
+
+function toggleSelMode(){
+  selMode = !selMode;
+  selStartBar = null;
+  selEndBar = null;
+  // Con el modo activo el lienzo no debe desplazarse al arrastrar el dedo:
+  // el arrastre se usa para seleccionar el rango de compases.
+  canvas.style.touchAction = selMode ? 'none' : '';
+  const btn = document.getElementById('btnSelCompas');
+  if(btn) btn.classList.toggle('active', selMode);
+  draw();
+}
+
+// Destaca en amarillo todos los compases del rango seleccionado.
+function drawMeasureSelection(){
+  const rng = selectionRange();
+  if(!rng) return;
+  const prefixW = STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14;
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,230,0,0.30)';
+  ctx.strokeStyle = '#cc9900';
+  ctx.lineWidth = 1.5;
+  const topOff = STAFF_LINE_YS[0] - STAVE_TOP - 8;
+  const fullH = (STAFF_LINE_YS[4] - STAFF_LINE_YS[0]) + 16;
+  for(let bar = rng.from; bar <= rng.to; bar++){
+    let mx, sysTop;
+    if(viewMode === 'scroll'){
+      sysTop = STAVE_TOP + currentTrack * (STAVE_HEIGHT + TRACK_GAP);
+      mx = prefixW + bar * MEASURE_W;
+    } else {
+      const mps = Math.max(1, measuresPerSystem());
+      const numSys = Math.max(1, Math.ceil(totalBars() / mps));
+      const sys = Math.min(numSys - 1, Math.floor(bar / mps));
+      sysTop = STAVE_TOP + sys * (STAVE_HEIGHT + SYST_GAP);
+      mx = prefixW + (bar % mps) * MEASURE_W;
+    }
+    ctx.fillRect(mx + 1, sysTop + topOff, MEASURE_W - 2, fullH);
+    ctx.strokeRect(mx + 1, sysTop + topOff, MEASURE_W - 2, fullH);
+  }
+  ctx.restore();
+}
+
+// Convierte un toque sobre el canvas en el índice de compás (0-based),
+// usando el mismo layout con el que se dibuja la hoja.
+function barFromTap(e){
+  const rect = canvas.getBoundingClientRect();
+  if(!rect.width || !rect.height) return null;
+  const w = measureWidth(), h = measureHeight();
+  const x = (e.clientX - rect.left) * (w / rect.width);
+  const y = (e.clientY - rect.top) * (h / rect.height);
+  const prefixW = STAFF_LEFT + 100 + keyCount(project.tonalidad) * 14;
+  const bars = totalBars();
+  let bar;
+  if(viewMode === 'scroll'){
+    bar = Math.floor((x - prefixW) / MEASURE_W);
+  } else {
+    const m = pageMargins();
+    const mps = Math.max(1, measuresPerSystem());
+    const numSys = Math.max(1, Math.ceil(bars / mps));
+    let sys = Math.floor((y - m.mt - STAVE_TOP) / (STAVE_HEIGHT + SYST_GAP));
+    sys = Math.max(0, Math.min(numSys - 1, sys));
+    let mi = Math.floor((x - m.ml - prefixW) / MEASURE_W);
+    mi = Math.max(0, Math.min(mps - 1, mi));
+    bar = sys * mps + mi;
+  }
+  return Math.max(0, Math.min(bars - 1, bar));
+}
+
+function handleSelTap(bar, extend){
+  // Clic simple: selecciona UN compás. Mayús+clic: amplía el rango existente
+  // hasta el compás pulsado (si no hay selección previa, lo toma como inicial).
+  if(extend && selStartBar !== null){
+    selEndBar = bar;
+  } else {
+    selStartBar = bar;
+    selEndBar = null;
+  }
+  draw();
+}
+
+// Selección de compases con el puntero:
+//  - Clic/toque: selecciona un compás.
+//  - Mantener y arrastrar: rango desde el compás de inicio hasta el de la soltada.
+//  - Mayús + clic: amplía la selección hasta el compás pulsado.
+let selTapStart = null;
+canvas.addEventListener('pointerdown', e => {
+  if(e.button !== 0) return; // solo botón principal (el derecho abre el menú)
+  if(selMode) selTapStart = {x: e.clientX, y: e.clientY};
+});
+canvas.addEventListener('pointerup', e => {
+  if(!selMode || !selTapStart) return;
+  const dx = e.clientX - selTapStart.x, dy = e.clientY - selTapStart.y;
+  const moved = dx * dx + dy * dy > 100;
+  const barEnd = barFromTap(e);
+  const barStart = moved ? barFromTap({clientX: selTapStart.x, clientY: selTapStart.y}) : null;
+  selTapStart = null;
+  if(barEnd === null) return;
+  if(moved){
+    if(barStart === null) return;
+    selStartBar = barStart;
+    selEndBar = barEnd;
+    draw();
+    return;
+  }
+  handleSelTap(barEnd, e.shiftKey);
+});
+
+// Copia al portapapeles interno las celdas de los compases del rango.
+// Los beats se guardan relativos al inicio del rango.
+function copyMeasures(){
+  const rng = selectionRange();
+  if(!rng) return 0;
+  const notes = getNotes();
+  const mBeats = measureBeats(project.compas);
+  const fromBeat = rng.from * mBeats;
+  const toBeat = (rng.to + 1) * mBeats;
+  const copied = [];
+  for(let i = 0; i < notes.length; i++){
+    const b = getCellBeat(notes, i);
+    if(b >= fromBeat - CURSOR_EPS && b < toBeat - CURSOR_EPS){
+      const c = JSON.parse(JSON.stringify(notes[i]));
+      c.beat = b - fromBeat;
+      copied.push(c);
+    }
+  }
+  measureClipboard = {notes: copied, bars: rng.to - rng.from + 1, beats: toBeat - fromBeat};
+  return measureClipboard.bars;
+}
+
+// Cortar: copia el rango y lo elimina, cerrando el hueco (las figuras
+// posteriores se desplazan a la izquierda) y quitando los compases sobrantes.
+function cutMeasures(){
+  const rng = selectionRange();
+  if(!rng) return;
+  const barsBefore = totalBars();
+  copyMeasures();
+  const notes = getNotes();
+  const mBeats = measureBeats(project.compas);
+  const fromBeat = rng.from * mBeats;
+  const toBeat = (rng.to + 1) * mBeats;
+  const cutBeats = toBeat - fromBeat;
+  const kept = [];
+  for(let i = 0; i < notes.length; i++){
+    const b = getCellBeat(notes, i);
+    if(b >= fromBeat - CURSOR_EPS && b < toBeat - CURSOR_EPS) continue;
+    const n = notes[i];
+    if(b >= toBeat - CURSOR_EPS){
+      const c = {};
+      for(const k in n) c[k] = n[k];
+      c.beat = b - cutBeats;
+      kept.push(c);
+    } else {
+      kept.push(n);
+    }
+  }
+  notes.length = 0;
+  Array.prototype.push.apply(notes, kept);
+  const nCut = rng.to - rng.from + 1;
+  project.nBars = Math.max(1, barsBefore - nCut);
+  const maxBeat = (totalBars() - 1) * mBeats;
+  if(cursorBeat > maxBeat) cursorBeat = maxBeat;
+  selStartBar = null;
+  selEndBar = null;
+  saveProjects(getProjects().map((p, i) => i === projIdx ? project : p));
+  draw();
+  ensureCursorVisible();
+}
+
+// Pega el portapapeles: abre un hueco en el compás de destino (el seleccionado,
+// o el del cursor si no hay selección), desplazando a la derecha las figuras
+// posteriores e insertando los compases copiados/cortados.
+function pasteMeasures(){
+  if(!measureClipboard) return;
+  const notes = getNotes();
+  const mBeats = measureBeats(project.compas);
+  const barsBefore = totalBars();
+  const rng = selectionRange();
+  let targetBar;
+  if(rng) targetBar = rng.from;
+  else targetBar = Math.max(0, Math.min(barsBefore - 1, Math.floor(cursorBeat / mBeats)));
+  const fromBeat = targetBar * mBeats;
+  const insBeats = measureClipboard.beats;
+  materializeBeats(notes);
+  for(const n of notes){
+    if(n.beat >= fromBeat - CURSOR_EPS) n.beat += insBeats;
+  }
+  measureClipboard.notes.forEach(c => {
+    const n = JSON.parse(JSON.stringify(c));
+    n.beat = fromBeat + c.beat;
+    notes.push(n);
+  });
+  notes.sort((a, b) => (a.beat || 0) - (b.beat || 0));
+  project.nBars = barsBefore + measureClipboard.bars;
+  cursorBeat = Math.min(fromBeat + insBeats, (totalBars() - 1) * mBeats);
+  cursorVisible = true;
+  if(selMode){
+    selStartBar = targetBar;
+    selEndBar = measureClipboard.bars > 1 ? targetBar + measureClipboard.bars - 1 : null;
+  }
+  saveProjects(getProjects().map((p, i) => i === projIdx ? project : p));
+  draw();
+  ensureCursorVisible();
+}
+
+document.getElementById('btnSelCompas').onclick = toggleSelMode;
+
+// ---- Menú contextual (clic derecho sobre la partitura) ----
+// Ofrece Cortar / Copiar / Pegar, las mismas opciones que los botones y los
+// atajos. Si no hay selección, selecciona el compás bajo el puntero.
+const ctxMenu = document.getElementById('ctxMenu');
+function showCtxMenu(x, y){
+  ctxMenu.querySelector('[data-ctx="cut"]').disabled = !selectionRange();
+  ctxMenu.querySelector('[data-ctx="copy"]').disabled = !selectionRange();
+  ctxMenu.querySelector('[data-ctx="paste"]').disabled = !measureClipboard;
+  ctxMenu.classList.add('show');
+  const r = ctxMenu.getBoundingClientRect();
+  ctxMenu.style.left = Math.max(4, Math.min(x, window.innerWidth - r.width - 6)) + 'px';
+  ctxMenu.style.top = Math.max(4, Math.min(y, window.innerHeight - r.height - 6)) + 'px';
+}
+function hideCtxMenu(){ ctxMenu.classList.remove('show'); }
+canvas.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  // El menú necesita el modo de selección: si está apagado, se enciende.
+  if(!selMode){
+    selMode = true;
+    selStartBar = null;
+    selEndBar = null;
+    canvas.style.touchAction = 'none';
+    const btn = document.getElementById('btnSelCompas');
+    if(btn) btn.classList.add('active');
+  }
+  // Sin selección previa, el clic derecho selecciona el compás apuntado.
+  if(selStartBar === null){
+    const bar = barFromTap(e);
+    if(bar !== null){ selStartBar = bar; selEndBar = null; }
+  }
+  draw();
+  showCtxMenu(e.clientX, e.clientY);
+});
+// Cierre al pulsar fuera del menú (antes que el resto de manejadores).
+document.addEventListener('pointerdown', e => {
+  if(ctxMenu.classList.contains('show') && !ctxMenu.contains(e.target)) hideCtxMenu();
+}, true);
+document.addEventListener('keydown', e => { if(e.key === 'Escape') hideCtxMenu(); });
+ctxMenu.querySelectorAll('[data-ctx]').forEach(b => {
+  b.onclick = () => {
+    hideCtxMenu();
+    const a = b.dataset.ctx;
+    if(a === 'cut') cutMeasures();
+    else if(a === 'copy') copyMeasures();
+    else if(a === 'paste') pasteMeasures();
+  };
+});
+
+// ---- Atajos de portapapeles: Ctrl/Cmd+C copiar, +X cortar, +V pegar ----
+document.addEventListener('keydown', e => {
+  if(!e.ctrlKey && !e.metaKey) return;
+  const k = (e.key || '').toLowerCase();
+  if(k !== 'c' && k !== 'x' && k !== 'v') return;
+  if(!isWritingFocused()) return;
+  e.preventDefault();
+  if(k === 'c') copyMeasures();
+  else if(k === 'x') cutMeasures();
+  else pasteMeasures();
+});
 
 // Teclados virtuales modernos (Android, iOS 16.4+): el carácter llega en `data`
 // justo antes de insertarse. Cancelarlo evita que el texto se acumule en el campo
